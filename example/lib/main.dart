@@ -5,6 +5,7 @@ import 'package:android_path_provider/android_path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
@@ -108,16 +109,18 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _saveScreen() async {
-    // RenderRepaintBoundary boundary =
-    // _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    // ui.Image image = await boundary.toImage();
-    // ByteData? byteData = await (image.toByteData(format: ui.ImageByteFormat.png) as FutureOr<ByteData?>);
-    // if (byteData != null) {
-    //   final result =
-    //   await ImageGallerySaver.saveImage(byteData.buffer.asUint8List());
-    //   print(result);
-    //   _toastInfo(result.toString());
-    // }
+    RenderRepaintBoundary boundary =
+        _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    ui.Image image = await boundary.toImage();
+    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData != null) {
+      String picturesPath = await AndroidPathProvider.picturesPath +
+          "/saver_gallery/${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final result = await SaverGallery.saveImage(byteData.buffer.asUint8List(),
+          path: picturesPath);
+      debugPrint(result.toString());
+      _toastInfo(result.toString());
+    }
   }
 
   _getHttp() async {
@@ -147,11 +150,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _saveVideo() async {
-    String savePath = await AndroidPathProvider.moviesPath  + "/${DateTime.now().millisecondsSinceEpoch}.mp4";
+    String savePath = await AndroidPathProvider.moviesPath +
+        "/${DateTime.now().millisecondsSinceEpoch}.mp4";
     String fileUrl =
         "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
     await Dio().download(fileUrl, savePath, onReceiveProgress: (count, total) {
-      print((count / total * 100).toStringAsFixed(0) + "%");
+      debugPrint((count / total * 100).toStringAsFixed(0) + "%");
     });
     final result = await SaverGallery.saveFile(savePath);
     debugPrint(result.toString());
