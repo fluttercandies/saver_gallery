@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:path/path.dart';
 
@@ -13,9 +14,12 @@ class SaverGallery {
   /// for example:{"isSuccess":true, "filePath":String?}
   static Future<Map<String, dynamic>> saveImage(Uint8List imageBytes,
       {int quality = 100,
-      required String path,
-      bool isReturnImagePathOfIOS = false}) async {
-    String fileExtension = extension(path).replaceFirst(".", '');
+      required String fileName,
+      bool existsDelete = true,
+      bool isReturnImagePathOfIOS = false,
+      String relativePath = "Pictures",
+      }) async {
+    String fileExtension = extension(fileName).replaceFirst(".", '');
     if (fileExtension == "gif") {
       throw Exception("Gif can't save to Gallery,plase use saveFile");
     } else {
@@ -23,8 +27,10 @@ class SaverGallery {
           'saveImageToGallery', <String, dynamic>{
         'imageBytes': imageBytes,
         'quality': quality,
-        'path': path,
+        'fileName': fileName,
+        'existsDelete': existsDelete,
         'extension': fileExtension,
+        'relativePath': relativePath,
         'isReturnImagePathOfIOS': isReturnImagePathOfIOS
       }))!;
     }

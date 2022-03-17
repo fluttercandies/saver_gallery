@@ -20,6 +20,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.lang.RuntimeException
 
 /** SaverGalleryPlugin */
 class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
@@ -33,16 +34,18 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
             "saveImageToGallery" -> {
                 val image = call.argument<ByteArray>("imageBytes") ?: return
                 val quality = call.argument<Int>("quality") ?: return
-                val path = call.argument<String>("path")!!
+                val fileName = call.argument<String>("fileName")!!
+                val existsDelete = call.argument<Boolean>("existsDelete")!!
                 val extension = call.argument<String>("extension")!!
-
+                //部分国内厂商修改目录名
+                val relativePath = call.argument<String>("relativePath")!!
                 result.success(
                     saveImageToGallery(
                         BitmapFactory.decodeByteArray(
                             image,
                             0,
                             image.size
-                        ), quality, extension, path
+                        ), quality, extension, fileName, existsDelete, relativePath
                     )
                 )
             }
@@ -56,30 +59,29 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
     }
 
 
-    private fun generateUri(extension: String, path: String): Uri {
+    private fun generateUri(extension: String, fileName: String, relativePath: String): Uri {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             var uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
 
             val values = ContentValues()
-            values.put(MediaStore.MediaColumns.DISPLAY_NAME, path)
-            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
             val mimeType = getMIMEType(extension)
             if (!TextUtils.isEmpty(mimeType)) {
                 values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
                 if (mimeType!!.startsWith("video")) {
                     uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MOVIES)
                 }
             }
             return applicationContext?.contentResolver?.insert(uri, values)!!
         } else {
-            File(path).parentFile?.run {
-                if (!exists()) {
-                    mkdir()
-                }
+            val storePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + relativePath
+            val appDir = File(storePath)
+            if (!appDir.exists()) {
+                appDir.mkdir()
             }
-            return Uri.fromFile(File(path))
+            return Uri.fromFile(File(appDir, fileName))
         }
     }
 
@@ -95,11 +97,14 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
         bmp: Bitmap,
         quality: Int,
         extension: String,
-        path: String,
+        fileName: String,
+        existsDelete: Boolean,
+        relativePath: String,
     ): HashMap<String, Any?> {
-        val context = applicationContext
-        val fileUri = generateUri(extension, path)
+        ///如果存在,并且不需要删除
         return try {
+            val fileUri = generateUri(extension, fileName, relativePath)
+            val context = applicationContext
             val fos = context?.contentResolver?.openOutputStream(fileUri)!!
             println("ImageGallerySaverPlugin $quality")
             bmp.compress(Bitmap.CompressFormat.JPEG, quality, fos)
@@ -107,37 +112,42 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
             fos.close()
             context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
             bmp.recycle()
+            SaveResultModel(
+                fileUri.toString().isNotEmpty(),
+                fileUri.toString(),
+                null
+            ).toHashMap()
+        } catch (e: IOException) {
+            SaveResultModel(false, null, e.toString()).toHashMap()
+        }
+
+    }
+
+    private fun saveFileToGallery(path: String): HashMap<String, Any?> {
+        val context = applicationContext
+        return try {
+            val originalFile = File(path)
+            val fileUri = generateUri(originalFile.extension, path, "")
+
+            val outputStream = context?.contentResolver?.openOutputStream(fileUri)!!
+            val fileInputStream = FileInputStream(originalFile)
+
+            val buffer = ByteArray(10240)
+            var count: Int
+            while (fileInputStream.read(buffer).also { count = it } > 0) {
+                outputStream.write(buffer, 0, count)
+            }
+
+            outputStream.flush()
+            outputStream.close()
+            fileInputStream.close()
+
+            context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
             SaveResultModel(fileUri.toString().isNotEmpty(), fileUri.toString(), null).toHashMap()
         } catch (e: IOException) {
             SaveResultModel(false, null, e.toString()).toHashMap()
         }
     }
-
-    private fun saveFileToGallery(path: String): HashMap<String, Any?> {
-         val context = applicationContext
-         return try {
-             val originalFile = File(path)
-             val fileUri = generateUri(originalFile.extension, path)
-
-             val outputStream = context?.contentResolver?.openOutputStream(fileUri)!!
-             val fileInputStream = FileInputStream(originalFile)
-
-             val buffer = ByteArray(10240)
-             var count: Int
-             while (fileInputStream.read(buffer).also { count = it } > 0) {
-                 outputStream.write(buffer, 0, count)
-             }
-
-             outputStream.flush()
-             outputStream.close()
-             fileInputStream.close()
-
-             context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
-             SaveResultModel(fileUri.toString().isNotEmpty(), fileUri.toString(), null).toHashMap()
-         } catch (e: IOException) {
-             SaveResultModel(false, null, e.toString()).toHashMap()
-         }
-     }
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         onAttachedToEngine(binding.applicationContext, binding.binaryMessenger)
