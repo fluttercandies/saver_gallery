@@ -20,8 +20,10 @@ import io.flutter.plugin.common.MethodChannel.Result
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.lang.Exception
 import java.lang.RuntimeException
 
+///参考 https://www.cxybb.com/article/asd912756674/114845358
 /** SaverGalleryPlugin */
 class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
     private var applicationContext: Context? = null
@@ -35,9 +37,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
                 val image = call.argument<ByteArray>("imageBytes") ?: return
                 val quality = call.argument<Int>("quality") ?: return
                 val fileName = call.argument<String>("fileName")!!
-                val existsDelete = call.argument<Boolean>("existsDelete")!!
                 val extension = call.argument<String>("extension")!!
-                //部分国内厂商修改目录名
                 val relativePath = call.argument<String>("relativePath")!!
                 result.success(
                     saveImageToGallery(
@@ -45,7 +45,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
                             image,
                             0,
                             image.size
-                        ), quality, extension, fileName, existsDelete, relativePath
+                        ), quality, extension, fileName, relativePath
                     )
                 )
             }
@@ -61,7 +61,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun generateUri(extension: String, fileName: String, relativePath: String): Uri {
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             var uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
 
             val values = ContentValues()
@@ -76,7 +76,8 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
             }
             return applicationContext?.contentResolver?.insert(uri, values)!!
         } else {
-            val storePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + relativePath
+            val storePath =
+                Environment.getExternalStorageDirectory().absolutePath + File.separator + relativePath
             val appDir = File(storePath)
             if (!appDir.exists()) {
                 appDir.mkdir()
@@ -98,27 +99,36 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
         quality: Int,
         extension: String,
         fileName: String,
-        existsDelete: Boolean,
         relativePath: String,
     ): HashMap<String, Any?> {
+        val context = applicationContext
         ///如果存在,并且不需要删除
-        return try {
-            val fileUri = generateUri(extension, fileName, relativePath)
-            val context = applicationContext
-            val fos = context?.contentResolver?.openOutputStream(fileUri)!!
-            println("ImageGallerySaverPlugin $quality")
-            bmp.compress(Bitmap.CompressFormat.JPEG, quality, fos)
-            fos.flush()
-            fos.close()
-            context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
-            bmp.recycle()
-            SaveResultModel(
-                fileUri.toString().isNotEmpty(),
-                fileUri.toString(),
-                null
-            ).toHashMap()
-        } catch (e: IOException) {
-            SaveResultModel(false, null, e.toString()).toHashMap()
+        return if (context?.exist(relativePath, fileName) == true) {
+            SaveResultModel(true, null).toHashMap()
+        } else {
+            try {
+                val fileUri = generateUri(extension, fileName, relativePath)
+
+                val fos = context?.contentResolver?.openOutputStream(fileUri)!!
+                println("ImageGallerySaverPlugin $quality")
+                bmp.compress(
+                    if (extension == "png") {
+                        Bitmap.CompressFormat.PNG
+                    } else {
+                        Bitmap.CompressFormat.JPEG
+                    }, quality, fos
+                )
+                fos.flush()
+                fos.close()
+                context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
+                bmp.recycle()
+                SaveResultModel(
+                    fileUri.toString().isNotEmpty(),
+                    null
+                ).toHashMap()
+            } catch (e: IOException) {
+                SaveResultModel(false, e.toString()).toHashMap()
+            }
         }
 
     }
@@ -143,9 +153,9 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
             fileInputStream.close()
 
             context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
-            SaveResultModel(fileUri.toString().isNotEmpty(), fileUri.toString(), null).toHashMap()
+            SaveResultModel(fileUri.toString().isNotEmpty(), null).toHashMap()
         } catch (e: IOException) {
-            SaveResultModel(false, null, e.toString()).toHashMap()
+            SaveResultModel(false, e.toString()).toHashMap()
         }
     }
 
@@ -169,14 +179,57 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
 
 class SaveResultModel(
     var isSuccess: Boolean,
-    var filePath: String? = null,
     var errorMessage: String? = null
 ) {
     fun toHashMap(): HashMap<String, Any?> {
         val hashMap = HashMap<String, Any?>()
         hashMap["isSuccess"] = isSuccess
-        hashMap["filePath"] = filePath
         hashMap["errorMessage"] = errorMessage
         return hashMap
+    }
+}
+
+fun Context.exist(relativePath: String, fileName: String): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val projection = arrayOf(
+            MediaStore.Images.Media._ID,
+        )
+        //想不到吧？居然是这样写？
+        //咕噜咕噜，这不翻源码写的出来？
+        val selection = "${
+            MediaStore.Images.Media.RELATIVE_PATH
+        } LIKE ? AND ${
+            MediaStore.Images.Media.DISPLAY_NAME
+        } = ?"
+        val selectionArgs = arrayOf(
+            "%${
+                relativePath
+            }%",
+            fileName,
+        )
+        val sortOrder = "${
+            MediaStore.Images.Media.DISPLAY_NAME
+        } ASC"
+        return try {
+            val query = contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                sortOrder
+            )
+            val count = query?.count ?: 0
+            query?.close()
+            count > 0
+        } catch (e: Exception) {
+            false
+        }
+    } else {
+        val targetFile =
+            File(
+                File(Environment.getExternalStorageDirectory().absolutePath, relativePath),
+                fileName
+            )
+        return targetFile.exists()
     }
 }
