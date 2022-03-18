@@ -10,7 +10,7 @@ We use the `image_picker` plugin to select images from the Android and iOS image
 To use this plugin, add `saver_gallery` as a dependency in your pubspec.yaml file. For example:
 ```yaml
 dependencies:
-  saver_gallery: ^1.0.0
+  saver_gallery: ^1.0.1
 ```
 
 ## iOS
@@ -36,15 +36,19 @@ AndroidManifest.xml file need to add the following permission:
 ## Example
 Saving an image from the internet(ig: png/jpg/gif/others), quality and name is option
 ``` dart
-_save() async {
-   var response = await Dio().get(
-           "https://ss0.baidu.com/94o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=a62e824376d98d1069d40a31113eb807/838ba61ea8d3fd1fc9c7b6853a4e251f94ca5f46.jpg",
-           options: Options(responseType: ResponseType.bytes));
-   final result = await SaverGallery.saveImage(
-           Uint8List.fromList(response.data),
-           quality: 60,
-           name: "hello");
-   print(result);
+  _saveGif() async {
+    var response = await Dio().get(
+        "https://hyjdoc.oss-cn-beijing.aliyuncs.com/hyj-doc-flutter-demo-run.gif",
+        options: Options(responseType: ResponseType.bytes));
+    String picturesPath = "test_jpg.gif";
+    debugPrint(picturesPath);
+    final result = await SaverGallery.saveImage(
+        Uint8List.fromList(response.data),
+        quality: 60,
+        name: picturesPath,
+        androidRelativePath: "Pictures/appName/xx");
+    debugPrint(result.toString());
+    _toastInfo("$result");
   }
 ```
 
