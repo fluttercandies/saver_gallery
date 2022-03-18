@@ -132,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
         Uint8List.fromList(response.data),
         quality: 60,
         name: picturesPath,
-        relativePath: "Pictures/aa/bb");
+        androidRelativePath: "Pictures/aa/bb");
     debugPrint(result.toString());
     _toastInfo("$result");
   }
