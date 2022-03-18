@@ -36,7 +36,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
             "saveImageToGallery" -> {
                 val image = call.argument<ByteArray>("imageBytes") ?: return
                 val quality = call.argument<Int>("quality") ?: return
-                val fileName = call.argument<String>("fileName")!!
+                val fileName = call.argument<String>("name")!!
                 val extension = call.argument<String>("extension")!!
                 val relativePath = call.argument<String>("relativePath")!!
                 result.success(

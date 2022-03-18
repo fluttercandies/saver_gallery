@@ -15,11 +15,11 @@ class SaverGallery {
   static Future<Map<String, dynamic>> saveImage(
     Uint8List imageBytes, {
     int quality = 100,
-    required String fileName,
+    required String name,
     bool isReturnImagePathOfIOS = false,
     String relativePath = "Pictures",
   }) async {
-    String fileExtension = extension(fileName).replaceFirst(".", '');
+    String fileExtension = extension(name).replaceFirst(".", '');
     if (fileExtension == "gif") {
       throw Exception("Gif can't save to Gallery,plase use saveFile");
     } else {
@@ -27,7 +27,7 @@ class SaverGallery {
           'saveImageToGallery', <String, dynamic>{
         'imageBytes': imageBytes,
         'quality': quality,
-        'fileName': fileName,
+        'name': name,
         'extension': fileExtension,
         'relativePath': relativePath,
         'isReturnImagePathOfIOS': isReturnImagePathOfIOS

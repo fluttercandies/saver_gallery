@@ -116,7 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (byteData != null) {
       String picturesPath = "${DateTime.now().millisecondsSinceEpoch}.jpg";
       final result = await SaverGallery.saveImage(byteData.buffer.asUint8List(),
-          fileName: picturesPath);
+          name: picturesPath);
       debugPrint(result.toString());
       _toastInfo(result.toString());
     }
@@ -131,7 +131,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final result = await SaverGallery.saveImage(
         Uint8List.fromList(response.data),
         quality: 60,
-        fileName: picturesPath,
+        name: picturesPath,
         relativePath: "Pictures/aa/bb");
     debugPrint(result.toString());
     _toastInfo("$result");
