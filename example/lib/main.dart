@@ -138,12 +138,16 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _saveGif() async {
-    String fileUrl =
-        "https://hyjdoc.oss-cn-beijing.aliyuncs.com/hyj-doc-flutter-demo-run.gif";
-    String savePath = await AndroidPathProvider.picturesPath +
-        "/saver_gallery/${DateTime.now().millisecondsSinceEpoch}.gif";
-    await Dio().download(fileUrl, savePath);
-    final result = await SaverGallery.saveFile(savePath);
+    var response = await Dio().get(
+        "https://hyjdoc.oss-cn-beijing.aliyuncs.com/hyj-doc-flutter-demo-run.gif",
+        options: Options(responseType: ResponseType.bytes));
+    String picturesPath = "test_jpg.gif";
+    debugPrint(picturesPath);
+    final result = await SaverGallery.saveImage(
+        Uint8List.fromList(response.data),
+        quality: 60,
+        name: picturesPath,
+        androidRelativePath: "Pictures/appName/xx");
     debugPrint(result.toString());
     _toastInfo("$result");
   }

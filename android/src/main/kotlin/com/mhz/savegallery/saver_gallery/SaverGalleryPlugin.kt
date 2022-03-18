@@ -41,11 +41,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
                 val relativePath = call.argument<String>("relativePath")!!
                 result.success(
                     saveImageToGallery(
-                        BitmapFactory.decodeByteArray(
-                            image,
-                            0,
-                            image.size
-                        ), quality, extension, fileName, relativePath
+                        image, quality, extension, fileName, relativePath
                     )
                 )
             }
@@ -95,7 +91,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun saveImageToGallery(
-        bmp: Bitmap,
+        image: ByteArray,
         quality: Int,
         extension: String,
         fileName: String,
@@ -108,24 +104,37 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
         } else {
             try {
                 val fileUri = generateUri(extension, fileName, relativePath)
-
-                val fos = context?.contentResolver?.openOutputStream(fileUri)!!
-                println("ImageGallerySaverPlugin $quality")
-                bmp.compress(
-                    if (extension == "png") {
-                        Bitmap.CompressFormat.PNG
+                context?.contentResolver?.openOutputStream(fileUri)!!.use {
+                    println("ImageGallerySaverPlugin $quality")
+                    //如果是gif的话
+                    if (extension == "gif") {
+                        it.write(image)
                     } else {
-                        Bitmap.CompressFormat.JPEG
-                    }, quality, fos
-                )
-                fos.flush()
-                fos.close()
-                context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
-                bmp.recycle()
-                SaveResultModel(
-                    fileUri.toString().isNotEmpty(),
-                    null
-                ).toHashMap()
+                        var bmp: Bitmap? = null
+                        try {
+                            bmp = BitmapFactory.decodeByteArray(
+                                image,
+                                0,
+                                image.size
+                            )
+                            bmp.compress(
+                                if (extension == "png") {
+                                    Bitmap.CompressFormat.PNG
+                                } else {
+                                    Bitmap.CompressFormat.JPEG
+                                }, quality, it
+                            )
+                        } finally {
+                            bmp?.recycle()
+                        }
+                    }
+                    it.flush()
+                    context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
+                    SaveResultModel(
+                        fileUri.toString().isNotEmpty(),
+                        null
+                    ).toHashMap()
+                }
             } catch (e: IOException) {
                 SaveResultModel(false, e.toString()).toHashMap()
             }

@@ -15,24 +15,20 @@ class SaverGallery {
   static Future<Map<String, dynamic>> saveImage(
     Uint8List imageBytes, {
     int quality = 100,
+    String? fileExtension,
     required String name,
     bool isReturnImagePathOfIOS = false,
-    String relativePath = "Pictures",
+    String androidRelativePath = "Pictures",
   }) async {
-    String fileExtension = extension(name).replaceFirst(".", '');
-    if (fileExtension == "gif") {
-      throw Exception("Gif can't save to Gallery,plase use saveFile");
-    } else {
-      return (await _channel.invokeMapMethod<String, dynamic>(
-          'saveImageToGallery', <String, dynamic>{
-        'imageBytes': imageBytes,
-        'quality': quality,
-        'name': name,
-        'extension': fileExtension,
-        'relativePath': relativePath,
-        'isReturnImagePathOfIOS': isReturnImagePathOfIOS
-      }))!;
-    }
+    return (await _channel.invokeMapMethod<String, dynamic>(
+        'saveImageToGallery', <String, dynamic>{
+      'imageBytes': imageBytes,
+      'quality': quality,
+      'name': name,
+      'extension': fileExtension ?? extension(name).replaceFirst(".", ''),
+      'relativePath': androidRelativePath,
+      'isReturnImagePathOfIOS': isReturnImagePathOfIOS
+    }))!;
   }
 
   /// Save the PNG，JPG，JPEG image or video located at [file] to the local device media gallery.
