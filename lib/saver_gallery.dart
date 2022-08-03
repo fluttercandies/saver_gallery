@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
@@ -13,23 +12,22 @@ class SaverGallery {
   /// imageBytes can't null
   /// return Map type
   /// for example:{"isSuccess":true, "errorMessage":String?}
-  static Future<Map<String, dynamic>> saveImage(
-    Uint8List imageBytes, {
+  static Future<Map<String, dynamic>> saveImage(Uint8List imageBytes, {
     int quality = 100,
     String? fileExtension,
     required String name,
     bool isReturnImagePathOfIOS = false,
     String androidRelativePath = "Pictures",
   }) async {
-    if (fileExtension == null) {
-      String? mimeType = lookupMimeType(name, headerBytes: imageBytes);
-      if (mimeType != null) {
-        fileExtension = extensionFromMime(mimeType);
-      } else {
+    String? mimeType = lookupMimeType(name, headerBytes: imageBytes);
+    if (mimeType != null) {
+      fileExtension = extensionFromMime(mimeType);
+    } else {
+      if (fileExtension == null) {
         fileExtension = extension(name).replaceFirst(".", '');
       }
     }
-    if(!name.contains('.')){
+    if (!name.contains('.')) {
       name += '.${fileExtension}';
     }
     return (await _channel.invokeMapMethod<String, dynamic>(
