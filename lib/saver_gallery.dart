@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 
 import 'package:flutter/services.dart';
@@ -20,12 +21,23 @@ class SaverGallery {
     bool isReturnImagePathOfIOS = false,
     String androidRelativePath = "Pictures",
   }) async {
+    if (fileExtension == null) {
+      String? mimeType = lookupMimeType(name, headerBytes: imageBytes);
+      if (mimeType != null) {
+        fileExtension = extensionFromMime(mimeType);
+      } else {
+        fileExtension = extension(name).replaceFirst(".", '');
+      }
+    }
+    if(!name.contains('.')){
+      name += '.${fileExtension}';
+    }
     return (await _channel.invokeMapMethod<String, dynamic>(
         'saveImageToGallery', <String, dynamic>{
       'imageBytes': imageBytes,
       'quality': quality,
       'name': name,
-      'extension': fileExtension ?? extension(name).replaceFirst(".", ''),
+      'extension': fileExtension,
       'relativePath': androidRelativePath,
       'isReturnImagePathOfIOS': isReturnImagePathOfIOS
     }))!;

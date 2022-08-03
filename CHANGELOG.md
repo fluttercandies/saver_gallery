@@ -1,3 +1,8 @@
+## 1.0.2
+
+*  Release notes
+Determine the data type by Uint8List
+
 ## 1.0.1
 
 *  Release notes
