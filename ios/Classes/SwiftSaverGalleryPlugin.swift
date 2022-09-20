@@ -89,18 +89,7 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && imageIds.count > 0) {
-                    let assetResult = PHAsset.fetchAssets(withLocalIdentifiers: imageIds, options: nil)
-                    if (assetResult.count > 0) {
-                        let imageAsset = assetResult[0]
-                        let options = PHContentEditingInputRequestOptions()
-                        options.canHandleAdjustmentData = { (adjustmeta)
-                            -> Bool in true }
-                        imageAsset.requestContentEditingInput(with: options) { [unowned self] (contentEditingInput, info) in
-                            if let urlStr = contentEditingInput?.fullSizeImageURL?.absoluteString {
-                                self.saveResult(isSuccess: true, filePath: urlStr)
-                            }
-                        }
-                    }
+                    self.saveResult(isSuccess: true)
                 } else {
                     self.saveResult(isSuccess: false, error: self.errorMessage)
                 }

@@ -1,4 +1,7 @@
-## 1.0.3
+## 1.0.4
+
+*  Release notes
+remove ios photo read permission
 
 *  Release notes
 Determine the data type by Uint8List
