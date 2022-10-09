@@ -10,7 +10,7 @@ We use the `image_picker` plugin to select images from the Android and iOS image
 To use this plugin, add `saver_gallery` as a dependency in your pubspec.yaml file. For example:
 ```yaml
 dependencies:
-  saver_gallery: ^1.0.2
+  saver_gallery: ^1.0.4
 ```
 
 ## iOS
@@ -19,7 +19,7 @@ Add the following keys to your Info.plist file, located in
 <project root>/ios/Runner/Info.plist:
 ```
 <key>NSPhotoLibraryAddUsageDescription</key>
-<string></string>
+<string>获取相册权限</string>
 <key>NSPhotoLibraryUsageDescription</key>
 <string>获取相册权限</string>
 ```
@@ -34,6 +34,15 @@ AndroidManifest.xml file need to add the following permission:
  ```
 
 ## Example
+Access permission(use [permission_handler](https://pub.dev/packages/permission_handler))
+``` dart
+   bool statuses = await (Platform.isAndroid
+            ? Permission.storage
+            : Permission.photosAddOnly)
+        .request()
+        .isGranted;
+```
+
 Saving an image from the internet(ig: png/jpg/gif/others), quality and name is option
 ``` dart
   _saveGif() async {

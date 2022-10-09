@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:android_path_provider/android_path_provider.dart';
@@ -59,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Container(
                 padding: EdgeInsets.only(top: 15),
-                child: RaisedButton(
+                child: ElevatedButton(
                   onPressed: _saveScreen,
                   child: Text("Save Local Image"),
                 ),
@@ -68,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Container(
                 padding: EdgeInsets.only(top: 15),
-                child: RaisedButton(
+                child: ElevatedButton(
                   onPressed: _getHttp,
                   child: Text("Save network image"),
                 ),
@@ -77,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Container(
                 padding: EdgeInsets.only(top: 15),
-                child: RaisedButton(
+                child: ElevatedButton(
                   onPressed: _saveVideo,
                   child: Text("Save network video"),
                 ),
@@ -86,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Container(
                 padding: EdgeInsets.only(top: 15),
-                child: RaisedButton(
+                child: ElevatedButton(
                   onPressed: _saveGif,
                   child: Text("Save Gif to gallery"),
                 ),
@@ -99,13 +100,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _requestPermission() async {
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.storage,
-    ].request();
-
-    final info = statuses[Permission.storage].toString();
-    print(info);
-    _toastInfo(info);
+    bool statuses = await (Platform.isAndroid
+            ? Permission.storage
+            : Permission.photosAddOnly)
+        .request()
+        .isGranted;
+    _toastInfo('requestPermission result: ${statuses}');
   }
 
   _saveScreen() async {
