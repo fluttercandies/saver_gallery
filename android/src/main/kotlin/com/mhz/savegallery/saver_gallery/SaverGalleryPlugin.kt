@@ -72,11 +72,12 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
             }
             return applicationContext?.contentResolver?.insert(uri, values)!!
         } else {
+            @Suppress("DEPRECATION")
             val storePath =
                 Environment.getExternalStorageDirectory().absolutePath + File.separator + relativePath
             val appDir = File(storePath)
             if (!appDir.exists()) {
-                appDir.mkdir()
+                appDir.mkdirs()
             }
             return Uri.fromFile(File(appDir, fileName))
         }
@@ -136,6 +137,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
                     ).toHashMap()
                 }
             } catch (e: IOException) {
+                e.printStackTrace()
                 SaveResultModel(false, e.toString()).toHashMap()
             }
         }
