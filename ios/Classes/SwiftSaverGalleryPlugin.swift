@@ -173,7 +173,7 @@ public struct SaveResultModel: Encodable {
         let encoder = JSONEncoder()
         guard let data = try? encoder.encode(self) else { return nil }
         if (!JSONSerialization.isValidJSONObject(data)) {
-            return try? JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:Any]
+            return try! JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:Any]
         }
         return nil
     }
