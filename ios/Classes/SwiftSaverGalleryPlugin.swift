@@ -3,7 +3,7 @@ import UIKit
 import Photos
 
 public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
-  let errorMessage = "保存失败,请检查权限是否开启"
+  let errorMessage = "Failed to save, please check whether the permission is enabled"
        
   var result: FlutterResult?;
 
