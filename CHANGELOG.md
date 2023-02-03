@@ -1,7 +1,13 @@
+## 1.0.6
+
+*  Release notes
+merged pr https://github.com/zhangruiyu/saver_gallery/pull/1
+* fix ios save file bug 
+
 ## 1.0.5
 
 *  Release notes
-fix android<10 failed to save the multi-level directory
+   fix android<10 failed to save the multi-level directory
 
 ## 1.0.4
 
