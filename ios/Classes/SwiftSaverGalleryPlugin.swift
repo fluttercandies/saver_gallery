@@ -3,7 +3,7 @@ import UIKit
 import Photos
 
 public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
-  let errorMessage = "保存失败,请检查权限是否开启"
+  let errorMessage = "Failed to save, please check whether the permission is enabled"
        
   var result: FlutterResult?;
 
@@ -27,8 +27,7 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
         saveImage(UIImage(data: newImage) ?? image, isReturnImagePath: isReturnImagePath)
       } else if (call.method == "saveFileToGallery") {
         guard let arguments = call.arguments as? [String: Any],
-              let path = arguments["file"] as? String,
-              let _ = arguments["name"],
+              let path = arguments["path"] as? String,
               let isReturnFilePath = arguments["isReturnPathOfIOS"] as? Bool else { return }
         if (isImageFile(filename: path)) {
             saveImageAtFileUrl(path, isReturnImagePath: isReturnFilePath)
@@ -174,7 +173,7 @@ public struct SaveResultModel: Encodable {
         let encoder = JSONEncoder()
         guard let data = try? encoder.encode(self) else { return nil }
         if (!JSONSerialization.isValidJSONObject(data)) {
-            return try? JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:Any]
+            return try! JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:Any]
         }
         return nil
     }

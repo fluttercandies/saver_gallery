@@ -12,7 +12,8 @@ class SaverGallery {
   /// imageBytes can't null
   /// return Map type
   /// for example:{"isSuccess":true, "errorMessage":String?}
-  static Future<Map<String, dynamic>> saveImage(Uint8List imageBytes, {
+  static Future<Map<String, dynamic>> saveImage(
+    Uint8List imageBytes, {
     int quality = 100,
     String? fileExtension,
     required String name,
@@ -44,10 +45,12 @@ class SaverGallery {
   /// Save the PNG，JPG，JPEG image or video located at [file] to the local device media gallery.
   static Future saveFile(String file, {bool isReturnPathOfIOS = false}) async {
     final result = await _channel.invokeMethod(
-        'saveFileToGallery', <String, dynamic>{
-      'path': file,
-      'isReturnPathOfIOS': isReturnPathOfIOS
-    });
+      'saveFileToGallery',
+      <String, dynamic>{
+        'path': file,
+        'isReturnPathOfIOS': isReturnPathOfIOS,
+      },
+    );
     return result;
   }
 }
