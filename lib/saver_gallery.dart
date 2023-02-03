@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
-import 'package:mime/mime.dart';
-import 'package:path/path.dart';
 
 import 'package:flutter/services.dart';
+import 'package:mime/mime.dart';
+import 'package:path/path.dart';
 
 class SaverGallery {
   static const MethodChannel _channel = MethodChannel('saver_gallery');
