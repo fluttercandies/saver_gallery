@@ -13,7 +13,7 @@ class SaverGallery {
   /// imageBytes can't null
   /// return Map type
   /// for example:{"isSuccess":true, "errorMessage":String?}
-  static Future<Object> saveImage(
+  static Future<SaveResult> saveImage(
     Uint8List imageBytes, {
     int quality = 100,
     String? fileExtension,

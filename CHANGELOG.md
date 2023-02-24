@@ -1,4 +1,4 @@
-## 1.0.7
+## 1.0.8
 
 *  Release notes
 merged pr https://github.com/zhangruiyu/saver_gallery/pull/1
