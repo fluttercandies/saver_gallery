@@ -47,5 +47,9 @@
     <string></string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>获取相册权限</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>
