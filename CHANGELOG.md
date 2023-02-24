@@ -1,8 +1,7 @@
 ## 1.0.8
 
 *  Release notes
-merged pr https://github.com/zhangruiyu/saver_gallery/pull/1
-* fix ios save gif bug
+* fix ios save gif bug(https://github.com/zhangruiyu/saver_gallery/issues/2)
 
 ## 1.0.6
 
