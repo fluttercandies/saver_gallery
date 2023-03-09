@@ -2,6 +2,7 @@ package com.mhz.savegallery.saver_gallery
 
 import android.content.Context
 import android.os.Build
+import android.os.Environment
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.FlutterPlugin.FlutterPluginBinding
 import io.flutter.plugin.common.MethodCall
@@ -63,10 +64,10 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun constructDelegate(context: Context): SaverDelegate {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            SaverDelegateAndroidT(context)
-        } else {
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Environment.isExternalStorageLegacy()) {
             SaverDelegateDefault(context)
+        } else {
+            SaverDelegateAndroidT(context)
         }
     }
 }
