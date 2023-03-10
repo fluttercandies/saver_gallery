@@ -1,10 +1,10 @@
 name: saver_gallery
 description: flutter plugin project for save image and video to gallery, iOS need to add the following keys to your Info.plist file.
-version: 1.0.8
+version: 1.0.9
 homepage: https://github.com/zhangruiyu/saver_gallery
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.12.0 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:
