@@ -138,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
         quality: 60,
         name: picturesPath,
         androidRelativePath: "Pictures/aa/bb",
-        androidExistNotSave: true);
+        androidExistNotSave: false);
     debugPrint(result.toString());
     _toastInfo("$result");
   }
@@ -154,7 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
         quality: 60,
         name: picturesPath,
         androidRelativePath: "Pictures/appName/xx",
-        androidExistNotSave: true);
+        androidExistNotSave: false);
     debugPrint(result.toString());
     _toastInfo("$result");
   }

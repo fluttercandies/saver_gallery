@@ -36,6 +36,22 @@ AndroidManifest.xml file need to add the following permission:
 ## Example
 Access permission(use [permission_handler](https://pub.dev/packages/permission_handler))
 ``` dart
+    bool statuses;
+    if (Platform.isAndroid) {
+      final deviceInfoPlugin = DeviceInfoPlugin();
+      final deviceInfo = await deviceInfoPlugin.androidInfo;
+      final sdkInt = deviceInfo.version.sdkInt;
+      /// [androidExistNotSave]
+      /// On Android, if true, the save path already exists, it is not saved. Otherwise, it is saved
+      /// 在安卓平台上,如果是true,则保存路径已存在就不在保存,否则保存
+      /// is androidExistNotSave = true,write as follows:
+      ///  statuses = await Permission.storage.request().isGranted;
+      /// is androidExistNotSave = false,write as follows:
+      statuses =
+          sdkInt < 29 ? await Permission.storage.request().isGranted : true;
+    } else {
+      statuses = await Permission.photosAddOnly.request().isGranted;
+    }
    bool statuses = await (Platform.isAndroid
             ? Permission.storage
             : Permission.photosAddOnly)
