@@ -71,13 +71,15 @@ Saving an image from the internet(ig: png/jpg/gif/others), quality and name is o
         Uint8List.fromList(response.data),
         quality: 60,
         name: picturesPath,
-        androidRelativePath: "Pictures/appName/xx");
+        androidRelativePath: "Pictures/appName/xx",
+        androidExistNotSave: false,
+        );
     debugPrint(result.toString());
     _toastInfo("$result");
   }
 ```
 
-Saving file(ig: video/gif/others) from the internet
+Saving file(ig: video/others) from the internet
 ``` dart
 _saveVideo() async {
     var appDocDir = await getTemporaryDirectory();
