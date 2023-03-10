@@ -106,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final deviceInfo = await deviceInfoPlugin.androidInfo;
       final sdkInt = deviceInfo.version.sdkInt;
       statuses =
-          sdkInt <= 28 ? await Permission.storage.request().isGranted : true;
+          sdkInt < 29 ? await Permission.storage.request().isGranted : true;
     } else {
       statuses = await Permission.photosAddOnly.request().isGranted;
     }

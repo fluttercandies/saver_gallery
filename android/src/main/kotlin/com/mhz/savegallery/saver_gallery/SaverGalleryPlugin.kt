@@ -66,7 +66,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun constructDelegate(context: Context): SaverDelegate {
-        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Environment.isExternalStorageLegacy()) {
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             SaverDelegateDefault(context)
         } else {
             SaverDelegateAndroidT(context)

@@ -58,7 +58,7 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
         relativePath: String,
     ): HashMap<String, Any?> {
         ///如果存在,并且不需要删除
-        return if (exist(relativePath, fileName)) {
+        return if (existNotSave && exist(relativePath, fileName)) {
             SaveResultModel(true, null).toHashMap()
         } else {
             try {

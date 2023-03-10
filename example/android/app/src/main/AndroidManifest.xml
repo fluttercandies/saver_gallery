@@ -10,7 +10,6 @@
 
     <application
         android:name="${applicationName}"
-        android:requestLegacyExternalStorage="true"
         android:icon="@mipmap/ic_launcher"
         android:label="saver_gallery_example"
         android:usesCleartextTraffic="true">
