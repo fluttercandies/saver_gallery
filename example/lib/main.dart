@@ -1,13 +1,13 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'package:android_path_provider/android_path_provider.dart';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 
@@ -100,11 +100,16 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _requestPermission() async {
-    bool statuses = await (Platform.isAndroid
-            ? Permission.storage
-            : Permission.photosAddOnly)
-        .request()
-        .isGranted;
+    bool statuses;
+    if (Platform.isAndroid) {
+      final deviceInfoPlugin = DeviceInfoPlugin();
+      final deviceInfo = await deviceInfoPlugin.androidInfo;
+      final sdkInt = deviceInfo.version.sdkInt;
+      statuses =
+          sdkInt <= 28 ? await Permission.storage.request().isGranted : true;
+    } else {
+      statuses = await Permission.photosAddOnly.request().isGranted;
+    }
     _toastInfo('requestPermission result: ${statuses}');
   }
 
@@ -153,13 +158,22 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _saveVideo() async {
-    String savePath = await AndroidPathProvider.moviesPath +
-        "/${DateTime.now().millisecondsSinceEpoch}.mp4";
+    final dir = await getTemporaryDirectory();
+    String savePath =
+        "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.mp4";
     String fileUrl =
         "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-    await Dio().download(fileUrl, savePath, onReceiveProgress: (count, total) {
-      debugPrint((count / total * 100).toStringAsFixed(0) + "%");
-    });
+    await Dio().download(
+      fileUrl,
+      savePath,
+      options: Options(
+        sendTimeout: 10 * 60 * 1000,
+        receiveTimeout: 10 * 60 * 1000,
+      ),
+      onReceiveProgress: (count, total) {
+        debugPrint((count / total * 100).toStringAsFixed(0) + "%");
+      },
+    );
     final result = await SaverGallery.saveFile(savePath);
     debugPrint(result.toString());
     _toastInfo("$result");
