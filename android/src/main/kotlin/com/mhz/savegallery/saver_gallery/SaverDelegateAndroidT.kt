@@ -1,11 +1,20 @@
 package com.mhz.savegallery.saver_gallery
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.text.TextUtils
+import androidx.core.content.ContextCompat
+import androidx.core.content.pm.PermissionInfoCompat
 import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils
+import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.getMIMEType
 import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.scanUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,8 +22,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
-import io.flutter.plugin.common.MethodChannel.Result as MethodResult
 import java.io.IOException
+import io.flutter.plugin.common.MethodChannel.Result as MethodResult
 
 class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
     private val mainScope = CoroutineScope(Dispatchers.IO)
@@ -25,32 +34,38 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         filename: String,
         extension: String,
         relativePath: String,
+        existNotSave: Boolean,
         result: MethodResult
     ) {
         mainScope.launch(Dispatchers.IO) {
-            val mimeType = MediaStoreUtils.getMIMEType(extension)
+            ///此刻要判断是否拥有存储权限不然没法做到如果存在就不保存
+            if (existNotSave) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    if (exist(relativePath, filename)) {
+                        result.success(
+                            SaveResultModel(
+                                true
+                            ).toHashMap()
+                        )
+                        return@launch
+                    }
+                } else {
+                    ///没有权限
+                    result.success(
+                        SaveResultModel(
+                            false,
+                            "existNotSave must have storage permission when it is true"
+                        ).toHashMap()
+                    )
+                    return@launch
+                }
 
-            if (mimeType.isNullOrEmpty()) {
-                result.success(
-                    SaveResultModel(
-                        false,
-                        "Unsupported file"
-                    ).toHashMap()
-                )
-                return@launch
             }
-
-            val uri = MediaStoreUtils.createImageUri(context, filename, mimeType)
-            if (uri == null) {
-                result.success(
-                    SaveResultModel(
-                        false,
-                        "Couldn't create an image Uri: $filename"
-                    ).toHashMap()
-                )
-                return@launch
-            }
-
+            val uri = generateUri(extension, filename, relativePath)
             try {
                 context.contentResolver.openOutputStream(uri, "w")?.use {
                     if (extension == "gif") {
@@ -168,8 +183,65 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         }
     }
 
+
+    @SuppressLint("InlinedApi")
+    private fun exist(relativePath: String, fileName: String): Boolean {
+        val projection = arrayOf(
+            MediaStore.Images.Media._ID,
+        )
+        //想不到吧？居然是这样写？
+        //咕噜咕噜，这不翻源码写的出来？
+        val selection = "${
+            MediaStore.Images.Media.RELATIVE_PATH
+        } LIKE ? AND ${
+            MediaStore.Images.Media.DISPLAY_NAME
+        } = ?"
+        val selectionArgs = arrayOf(
+            "%${
+                relativePath
+            }%",
+            fileName,
+        )
+        val sortOrder = "${
+            MediaStore.Images.Media.DISPLAY_NAME
+        } ASC"
+        return try {
+            val query = context.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                sortOrder
+            )
+            val count = query?.count ?: 0
+            query?.close()
+            count > 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    @SuppressLint("InlinedApi")
+    private fun generateUri(extension: String, fileName: String, relativePath: String): Uri {
+
+        var uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+
+        val values = ContentValues()
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+        val mimeType = getMIMEType(extension)
+        if (!TextUtils.isEmpty(mimeType)) {
+            values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+            if (mimeType!!.startsWith("video")) {
+                uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            }
+        }
+        return context.contentResolver.insert(uri, values)!!
+    }
+
     override fun onClose() {
         super.onClose()
         mainScope.cancel()
     }
+
 }

@@ -13,12 +13,19 @@ class SaverGallery {
   /// imageBytes can't null
   /// return Map type
   /// for example:{"isSuccess":true, "errorMessage":String?}
+  /// [androidExistNotSave]
+  /// On Android, if true, the save path already exists, it is not saved. Otherwise, it is saved
+  /// 在安卓平台上,如果是true,则保存路径已存在就不在保存,否则保存
+  /// [androidRelativePath]
+  /// So for example androidRelativePath is Pictures/abc, so the save path is sdcard/Pictures/abc/${name}
+  /// 例如androidRelativePath是 Pictures/abc,那么保存路径就是 sdcard/Pictures/abc/${name}
   static Future<SaveResult> saveImage(
     Uint8List imageBytes, {
     int quality = 100,
     String? fileExtension,
     required String name,
     String androidRelativePath = "Pictures",
+    required bool androidExistNotSave,
   }) async {
     String? mimeType = lookupMimeType(name, headerBytes: imageBytes);
     if (mimeType != null) {
@@ -46,6 +53,7 @@ class SaverGallery {
       'name': name,
       'extension': fileExtension,
       'relativePath': androidRelativePath,
+      'androidExistNotSave': androidExistNotSave,
     }))!);
   }
 

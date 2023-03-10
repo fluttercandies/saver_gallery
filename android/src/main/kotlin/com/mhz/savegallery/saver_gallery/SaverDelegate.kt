@@ -12,6 +12,7 @@ abstract class SaverDelegate(protected val context: Context) {
         filename: String,
         extension: String,
         relativePath: String,
+        existNotSave: Boolean,
         result: MethodResult
     )
 

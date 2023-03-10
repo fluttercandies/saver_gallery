@@ -23,11 +23,12 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
         filename: String,
         extension: String,
         relativePath: String,
+        existNotSave: Boolean,
         result: MethodChannel.Result
     ) {
         result.success(
             saveImageToGallery(
-                image, quality, extension, filename, relativePath
+                image, quality, extension, filename,existNotSave, relativePath
             )
         )
     }
@@ -36,54 +37,32 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
         result.success(saveFileToGallery(path))
     }
 
-    private fun generateUri(extension: String, fileName: String, relativePath: String): Uri {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            var uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-
-            val values = ContentValues()
-            values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-            val mimeType = getMIMEType(extension)
-            if (!mimeType.isNullOrEmpty()) {
-                values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-                if (mimeType.startsWith("video")) {
-                    uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                }
-            }
-            return context.contentResolver?.insert(uri, values)!!
-        } else {
-            @Suppress("DEPRECATION")
-            val storePath =
-                Environment.getExternalStorageDirectory().absolutePath + File.separator + relativePath
-            val appDir = File(storePath)
-            if (!appDir.exists()) {
-                appDir.mkdirs()
-            }
-            return Uri.fromFile(File(appDir, fileName))
+    private fun generateUri(fileName: String, relativePath: String): Uri {
+        @Suppress("DEPRECATION")
+        val storePath =
+            Environment.getExternalStorageDirectory().absolutePath + File.separator + relativePath
+        val appDir = File(storePath)
+        if (!appDir.exists()) {
+            appDir.mkdirs()
         }
+        return Uri.fromFile(File(appDir, fileName))
     }
 
-    private fun getMIMEType(extension: String): String? {
-        var type: String? = null;
-        if (extension.isNotEmpty()) {
-            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.lowercase())
-        }
-        return type
-    }
 
     private fun saveImageToGallery(
         image: ByteArray,
         quality: Int,
         extension: String,
         fileName: String,
+        existNotSave: Boolean,
         relativePath: String,
     ): HashMap<String, Any?> {
         ///如果存在,并且不需要删除
-        return if (context.exist(relativePath, fileName)) {
+        return if (exist(relativePath, fileName)) {
             SaveResultModel(true, null).toHashMap()
         } else {
             try {
-                val fileUri = generateUri(extension, fileName, relativePath)
+                val fileUri = generateUri(fileName, relativePath)
                 context.contentResolver?.openOutputStream(fileUri)!!.use {
                     println("ImageGallerySaverPlugin $quality")
                     //如果是gif的话
@@ -125,7 +104,7 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
     private fun saveFileToGallery(path: String): HashMap<String, Any?> {
         return try {
             val originalFile = File(path)
-            val fileUri = generateUri(originalFile.extension, path, "")
+            val fileUri = generateUri(path, "")
 
             val outputStream = context.contentResolver?.openOutputStream(fileUri)!!
             val fileInputStream = FileInputStream(originalFile)
@@ -146,44 +125,9 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
             SaveResultModel(false, e.toString()).toHashMap()
         }
     }
-}
 
-fun Context.exist(relativePath: String, fileName: String): Boolean {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        val projection = arrayOf(
-            MediaStore.Images.Media._ID,
-        )
-        //想不到吧？居然是这样写？
-        //咕噜咕噜，这不翻源码写的出来？
-        val selection = "${
-            MediaStore.Images.Media.RELATIVE_PATH
-        } LIKE ? AND ${
-            MediaStore.Images.Media.DISPLAY_NAME
-        } = ?"
-        val selectionArgs = arrayOf(
-            "%${
-                relativePath
-            }%",
-            fileName,
-        )
-        val sortOrder = "${
-            MediaStore.Images.Media.DISPLAY_NAME
-        } ASC"
-        return try {
-            val query = contentResolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                projection,
-                selection,
-                selectionArgs,
-                sortOrder
-            )
-            val count = query?.count ?: 0
-            query?.close()
-            count > 0
-        } catch (e: Exception) {
-            false
-        }
-    } else {
+
+    private fun exist(relativePath: String, fileName: String): Boolean {
         val targetFile =
             File(
                 File(Environment.getExternalStorageDirectory().absolutePath, relativePath),
