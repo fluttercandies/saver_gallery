@@ -8,12 +8,9 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.provider.MediaStore
 import android.text.TextUtils
 import androidx.core.content.ContextCompat
-import androidx.core.content.pm.PermissionInfoCompat
-import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils
 import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.getMIMEType
 import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.scanUri
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +24,12 @@ import io.flutter.plugin.common.MethodChannel.Result as MethodResult
 
 class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
     private val mainScope = CoroutineScope(Dispatchers.IO)
+    private fun checkReadStoragePermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 
     override fun saveImageToGallery(
         image: ByteArray,
@@ -40,11 +43,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         mainScope.launch(Dispatchers.IO) {
             ///此刻要判断是否拥有存储权限不然没法做到如果存在就不保存
             if (existNotSave) {
-                if (ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
+                if (checkReadStoragePermission()) {
                     if (exist(relativePath, filename)) {
                         result.success(
                             SaveResultModel(
@@ -58,7 +57,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
                     result.success(
                         SaveResultModel(
                             false,
-                            "existNotSave must have storage permission when it is true"
+                            "existNotSave must have read storage permission when it is true"
                         ).toHashMap()
                     )
                     return@launch
@@ -111,12 +110,37 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         }
     }
 
-    override fun saveFileToGallery(path: String, result: MethodResult) {
+    override fun saveFileToGallery(
+        path: String, filename: String, relativePath: String,
+        existNotSave: Boolean, result: MethodResult
+    ) {
         mainScope.launch(Dispatchers.IO) {
+            ///此刻要判断是否拥有存储权限不然没法做到如果存在就不保存
+            if (existNotSave) {
+                if (checkReadStoragePermission()) {
+                    if (exist(relativePath, filename)) {
+                        result.success(
+                            SaveResultModel(
+                                true
+                            ).toHashMap()
+                        )
+                        return@launch
+                    }
+                } else {
+                    ///没有权限
+                    result.success(
+                        SaveResultModel(
+                            false,
+                            "existNotSave must have read storage permission when it is true"
+                        ).toHashMap()
+                    )
+                    return@launch
+                }
+
+            }
             val file = File(path)
-            val filename = file.nameWithoutExtension
             val extension = file.extension
-            val mimeType = MediaStoreUtils.getMIMEType(extension)
+            val mimeType = getMIMEType(extension)
 
             if (mimeType.isNullOrEmpty()) {
                 result.success(
@@ -128,26 +152,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
                 return@launch
             }
 
-            val uri = if (mimeType.startsWith("image")) {
-                MediaStoreUtils.createImageUri(context, filename, mimeType)
-            } else if (mimeType.startsWith("video")) {
-                MediaStoreUtils.createVideoUri(context, filename, mimeType)
-            } else if (mimeType.startsWith("audio")) {
-                MediaStoreUtils.createAudioUri(context, filename, mimeType)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                MediaStoreUtils.createDownloadUri(context, filename)
-            } else {
-                null
-            }
-            if (uri == null) {
-                result.success(
-                    SaveResultModel(
-                        false,
-                        "Couldn't create file: $filename"
-                    ).toHashMap()
-                )
-                return@launch
-            }
+            val uri = generateUri(extension, filename, relativePath)
 
             try {
                 context.contentResolver.openOutputStream(uri, "w")?.use { outputStream ->

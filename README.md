@@ -31,6 +31,8 @@ AndroidManifest.xml file need to add the following permission:
      <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
+     <!--  if androidExistNotSave = true -->
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />   
  ```
 
 ## Example
@@ -85,7 +87,7 @@ _saveVideo() async {
     var appDocDir = await getTemporaryDirectory();
     String savePath = appDocDir.path + "/temp.mp4";
     await Dio().download("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4", savePath);
-    final result = await SaverGallery.saveFile(savePath);
+    final result = await SaverGallery.saveFile(file: savePath,androidExistNotSave: true, name: '123.mp4',androidRelativePath: "Movies");
     print(result);
  }
 ```

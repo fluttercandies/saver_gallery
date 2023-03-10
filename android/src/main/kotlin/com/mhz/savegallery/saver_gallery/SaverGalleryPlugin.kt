@@ -41,7 +41,10 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
             }
             "saveFileToGallery" -> {
                 val path = call.argument<String>("path")!!
-                delegate?.saveFileToGallery(path = path, result = result)
+                val relativePath = call.argument<String>("relativePath")!!
+                val filename = call.argument<String>("name")!!
+                val existNotSave = call.argument<Boolean>("androidExistNotSave")!!
+                delegate?.saveFileToGallery(path, filename,relativePath, existNotSave, result)
             }
             else -> result.notImplemented()
         }

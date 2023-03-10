@@ -5,9 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class SaverGallery {
   static const MethodChannel _channel = MethodChannel('saver_gallery');
+
+  static var uuid = Uuid();
 
   /// save image to Gallery
   /// imageBytes can't null
@@ -37,10 +40,14 @@ class SaverGallery {
     }
     if ((fileExtension == "gif" || fileExtension == "GIF") && Platform.isIOS) {
       File tempPath = File(
-          '${(await getTemporaryDirectory()).path}/saver_gallery/${DateTime.now().microsecondsSinceEpoch}.gif');
+          '${(await getTemporaryDirectory()).path}/saver_gallery/${uuid.v4()}.gif');
       await tempPath.create(recursive: true);
       await tempPath.writeAsBytes(imageBytes);
-      return saveFile(tempPath.path);
+      return saveFile(
+          file: tempPath.path,
+          name: name,
+          androidRelativePath: androidRelativePath,
+          androidExistNotSave: androidExistNotSave);
     }
 
     if (!name.contains('.')) {
@@ -58,10 +65,20 @@ class SaverGallery {
   }
 
   /// Save the PNG，JPG，JPEG image or video located at [file] to the local device media gallery.
-  static Future<SaveResult> saveFile(String file) async {
+  static Future<SaveResult> saveFile({
+    required String file,
+    required String name,
+    String androidRelativePath = "Download",
+    required bool androidExistNotSave,
+  }) async {
     final result = await _channel.invokeMapMethod<String, dynamic>(
       'saveFileToGallery',
-      <String, dynamic>{'path': file},
+      <String, dynamic>{
+        'path': file,
+        'name': name,
+        'relativePath': androidRelativePath,
+        'androidExistNotSave': androidExistNotSave,
+      },
     );
     return SaveResult.fromMap(result!);
   }

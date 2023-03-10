@@ -28,13 +28,16 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
     ) {
         result.success(
             saveImageToGallery(
-                image, quality, extension, filename,existNotSave, relativePath
+                image, quality, extension, filename, existNotSave, relativePath
             )
         )
     }
 
-    override fun saveFileToGallery(path: String, result: MethodChannel.Result) {
-        result.success(saveFileToGallery(path))
+    override fun saveFileToGallery(
+        path: String, filename: String, relativePath: String,
+        existNotSave: Boolean, result: MethodChannel.Result
+    ) {
+        result.success(saveFileToGallery(path, filename, relativePath, existNotSave))
     }
 
     private fun generateUri(fileName: String, relativePath: String): Uri {
@@ -101,26 +104,32 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
         }
     }
 
-    private fun saveFileToGallery(path: String): HashMap<String, Any?> {
+    private fun saveFileToGallery(
+        path: String, filename: String, relativePath: String,
+        existNotSave: Boolean,
+    ): HashMap<String, Any?> {
         return try {
-            val originalFile = File(path)
-            val fileUri = generateUri(path, "")
+            if (existNotSave && exist(relativePath, filename)) {
+                SaveResultModel(true, null).toHashMap()
+            } else {
+                val originalFile = File(path)
+                val fileUri = generateUri(filename,relativePath)
 
-            val outputStream = context.contentResolver?.openOutputStream(fileUri)!!
-            val fileInputStream = FileInputStream(originalFile)
+                val outputStream = context.contentResolver?.openOutputStream(fileUri)!!
+                val fileInputStream = FileInputStream(originalFile)
+                val buffer = ByteArray(10240)
+                var count: Int
+                while (fileInputStream.read(buffer).also { count = it } > 0) {
+                    outputStream.write(buffer, 0, count)
+                }
 
-            val buffer = ByteArray(10240)
-            var count: Int
-            while (fileInputStream.read(buffer).also { count = it } > 0) {
-                outputStream.write(buffer, 0, count)
+                outputStream.flush()
+                outputStream.close()
+                fileInputStream.close()
+
+                context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
+                SaveResultModel(fileUri.toString().isNotEmpty(), null).toHashMap()
             }
-
-            outputStream.flush()
-            outputStream.close()
-            fileInputStream.close()
-
-            context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri))
-            SaveResultModel(fileUri.toString().isNotEmpty(), null).toHashMap()
         } catch (e: IOException) {
             SaveResultModel(false, e.toString()).toHashMap()
         }

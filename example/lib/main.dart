@@ -107,6 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final sdkInt = deviceInfo.version.sdkInt;
       statuses =
           sdkInt < 29 ? await Permission.storage.request().isGranted : true;
+      // statuses = await Permission.storage.request().isGranted;
     } else {
       statuses = await Permission.photosAddOnly.request().isGranted;
     }
@@ -138,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
         quality: 60,
         name: picturesPath,
         androidRelativePath: "Pictures/aa/bb",
-        androidExistNotSave: false);
+        androidExistNotSave: true);
     debugPrint(result.toString());
     _toastInfo("$result");
   }
@@ -176,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage> {
         debugPrint((count / total * 100).toStringAsFixed(0) + "%");
       },
     );
-    final result = await SaverGallery.saveFile(savePath);
+    final result = await SaverGallery.saveFile(file: savePath,androidExistNotSave: true, name: '123.mp4',androidRelativePath: "Movies");
     debugPrint(result.toString());
     _toastInfo("$result");
   }
