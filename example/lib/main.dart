@@ -148,7 +148,7 @@ class _MyHomePageState extends State<MyHomePage> {
     var response = await Dio().get(
         "https://hyjdoc.oss-cn-beijing.aliyuncs.com/hyj-doc-flutter-demo-run.gif",
         options: Options(responseType: ResponseType.bytes));
-    String picturesPath = "test_jpg";
+    String picturesPath = "test_gif";
     debugPrint(picturesPath);
     final result = await SaverGallery.saveImage(
         Uint8List.fromList(response.data),
