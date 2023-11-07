@@ -10,7 +10,7 @@ We use the `image_picker` plugin to select images from the Android and iOS image
 To use this plugin, add `saver_gallery` as a dependency in your pubspec.yaml file. For example:
 ```yaml
 dependencies:
-  saver_gallery: ^3.0.0
+  saver_gallery: ^3.0.1
 ```
 
 ## iOS
@@ -39,6 +39,7 @@ AndroidManifest.xml file need to add the following permission:
 ## Example
 Access permission(use [permission_handler](https://pub.dev/packages/permission_handler))
 ``` dart
+    bool androidExistNotSave = false;
     bool isGranted;
     if (Platform.isAndroid) {
       final deviceInfoPlugin = DeviceInfoPlugin();
@@ -48,10 +49,12 @@ Access permission(use [permission_handler](https://pub.dev/packages/permission_h
       /// On Android, if true, the save path already exists, it is not saved. Otherwise, it is saved
       /// 在安卓平台上,如果是true,则保存路径已存在就不在保存,否则保存
       /// is androidExistNotSave = true,write as follows:
-      isGranted = await (sdkInt > 33 ? Permission.photos : Permission.storage).request().isGranted;
+      if (androidExistNotSave) {
+        isGranted = await (sdkInt > 33 ? Permission.photos : Permission.storage).request().isGranted;
+      } else {
       /// is androidExistNotSave = false,write as follows:
-      isGranted =
-          sdkInt < 29 ? await Permission.storage.request().isGranted : true;
+        isGranted = sdkInt < 29 ? await Permission.storage.request().isGranted : true;
+      }
     } else {
       isGranted = await Permission.photosAddOnly.request().isGranted;
     }
