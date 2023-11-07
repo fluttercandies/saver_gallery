@@ -24,12 +24,12 @@ import io.flutter.plugin.common.MethodChannel.Result as MethodResult
 
 class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
     private val mainScope = CoroutineScope(Dispatchers.IO)
-    private fun checkReadStoragePermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        ) == PackageManager.PERMISSION_GRANTED
-    }
+//    private fun checkReadStoragePermission(): Boolean {
+//        return ContextCompat.checkSelfPermission(
+//            context,
+//            Manifest.permission.READ_EXTERNAL_STORAGE
+//        ) == PackageManager.PERMISSION_GRANTED
+//    }
 
     override fun saveImageToGallery(
         image: ByteArray,
@@ -43,7 +43,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         mainScope.launch(Dispatchers.IO) {
             ///此刻要判断是否拥有存储权限不然没法做到如果存在就不保存
             if (existNotSave) {
-                if (checkReadStoragePermission()) {
+//                if (checkReadStoragePermission()) {
                     if (exist(relativePath, filename)) {
                         result.success(
                             SaveResultModel(
@@ -52,16 +52,16 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
                         )
                         return@launch
                     }
-                } else {
-                    ///没有权限
-                    result.success(
-                        SaveResultModel(
-                            false,
-                            "existNotSave must have read storage permission when it is true"
-                        ).toHashMap()
-                    )
-                    return@launch
-                }
+//                } else {
+//                    ///没有权限
+//                    result.success(
+//                        SaveResultModel(
+//                            false,
+//                            "existNotSave must have read storage permission when it is true"
+//                        ).toHashMap()
+//                    )
+//                    return@launch
+//                }
 
             }
             val uri = generateUri(extension, filename, relativePath)
@@ -117,7 +117,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         mainScope.launch(Dispatchers.IO) {
             ///此刻要判断是否拥有存储权限不然没法做到如果存在就不保存
             if (existNotSave) {
-                if (checkReadStoragePermission()) {
+//                if (checkReadStoragePermission()) {
                     if (exist(relativePath, filename)) {
                         result.success(
                             SaveResultModel(
@@ -126,16 +126,16 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
                         )
                         return@launch
                     }
-                } else {
-                    ///没有权限
-                    result.success(
-                        SaveResultModel(
-                            false,
-                            "existNotSave must have read storage permission when it is true"
-                        ).toHashMap()
-                    )
-                    return@launch
-                }
+//                } else {
+//                    ///没有权限
+//                    result.success(
+//                        SaveResultModel(
+//                            false,
+//                            "existNotSave must have read storage permission when it is true"
+//                        ).toHashMap()
+//                    )
+//                    return@launch
+//                }
 
             }
             val file = File(path)
