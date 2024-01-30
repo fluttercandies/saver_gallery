@@ -239,6 +239,8 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
             values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
             if (mimeType!!.startsWith("video")) {
                 uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            } else if (mimeType.startsWith("audio")) {
+                uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
             }
         }
         return context.contentResolver.insert(uri, values)!!

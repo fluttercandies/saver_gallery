@@ -1,3 +1,6 @@
+## 3.0.2
+
+* android support save audio 
 ## 3.0.1
 
 * android 13 permission issue fix
