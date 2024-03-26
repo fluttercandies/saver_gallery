@@ -1,3 +1,7 @@
+## 3.0.3
+
+* gradle bugbix
+
 ## 3.0.2
 
 * android support save audio 
