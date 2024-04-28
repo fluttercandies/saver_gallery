@@ -1,3 +1,7 @@
+## 3.0.4
+
+* ios ITMS-91053
+
 ## 3.0.3
 
 * gradle bugbix
