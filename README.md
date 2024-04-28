@@ -19,9 +19,9 @@ Add the following keys to your Info.plist file, located in
 <project root>/ios/Runner/Info.plist:
 ```
 <key>NSPhotoLibraryAddUsageDescription</key>
-<string>获取相册权限</string>
+<string>photo</string>
 <key>NSPhotoLibraryUsageDescription</key>
-<string>获取相册权限</string>
+<string>photo</string>
 ```
 
 ##  Android
