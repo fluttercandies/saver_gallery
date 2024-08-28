@@ -1,3 +1,7 @@
+## 3.0.6
+
+* attempt to repair ITMS-91108
+
 ## 3.0.5
 
 * ios ITMS-91053
