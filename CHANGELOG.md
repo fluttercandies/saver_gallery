@@ -19,7 +19,7 @@
 
 ## 2.0.1
 
-* add androidExistNotSave param
+* add skipIfExists param
 
 ## 1.0.8
 

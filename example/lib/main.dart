@@ -122,7 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (byteData != null) {
       String picturesPath = "${DateTime.now().millisecondsSinceEpoch}.jpg";
       final result = await SaverGallery.saveImage(byteData.buffer.asUint8List(),
-          name: picturesPath, androidExistNotSave: false);
+          name: picturesPath, skipIfExists: false);
       debugPrint(result.toString());
       _toastInfo(result.toString());
     }
@@ -139,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
         quality: 60,
         name: picturesPath,
         androidRelativePath: "Pictures/aa/bb",
-        androidExistNotSave: true);
+        skipIfExists: true);
     debugPrint(result.toString());
     _toastInfo("$result");
   }
@@ -155,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
         quality: 60,
         name: picturesPath,
         androidRelativePath: "Pictures/appName/xx",
-        androidExistNotSave: false);
+        skipIfExists: false);
     debugPrint(result.toString());
     _toastInfo("$result");
   }
@@ -177,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage> {
         debugPrint((count / total * 100).toStringAsFixed(0) + "%");
       },
     );
-    final result = await SaverGallery.saveFile(file: savePath,androidExistNotSave: true, name: '123.mp4',androidRelativePath: "Movies");
+    final result = await SaverGallery.saveFile(file: savePath,skipIfExists: true, name: '123.mp4',androidRelativePath: "Movies");
     debugPrint(result.toString());
     _toastInfo("$result");
   }
