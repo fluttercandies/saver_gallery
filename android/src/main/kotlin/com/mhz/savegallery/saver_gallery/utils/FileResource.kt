@@ -25,7 +25,7 @@ import kotlinx.parcelize.Parcelize
  * Represents a File entry.
  *
  * @property uri Entry uri.
- * @property filename File name with extension.
+ * @property fileName File name with extension.
  * @property size Size of the file in bytes.
  * @property type Entry file type.
  * @property mimeType Mime type of the file.
@@ -33,7 +33,7 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class FileResource(
     val uri: Uri,
-    val filename: String,
+    val fileName: String,
     val size: Long,
     val type: FileType,
     val mimeType: String,

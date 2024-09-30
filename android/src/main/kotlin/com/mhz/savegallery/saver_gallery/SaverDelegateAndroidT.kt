@@ -1,18 +1,16 @@
 package com.mhz.savegallery.saver_gallery
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
-import android.text.TextUtils
-import androidx.core.content.ContextCompat
 import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.getMIMEType
 import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.scanUri
+import io.flutter.plugin.common.MethodChannel.Result as MethodResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -20,235 +18,174 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
-import io.flutter.plugin.common.MethodChannel.Result as MethodResult
 
+// Implementation of the SaverDelegate for Android that handles saving images and files to the gallery.
 class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
+
     private val mainScope = CoroutineScope(Dispatchers.IO)
-//    private fun checkReadStoragePermission(): Boolean {
-//        return ContextCompat.checkSelfPermission(
-//            context,
-//            Manifest.permission.READ_EXTERNAL_STORAGE
-//        ) == PackageManager.PERMISSION_GRANTED
-//    }
 
     override fun saveImageToGallery(
         image: ByteArray,
         quality: Int,
-        filename: String,
+        fileName: String,
         extension: String,
         relativePath: String,
-        existNotSave: Boolean,
+        skipIfExists: Boolean,
         result: MethodResult
     ) {
-        mainScope.launch(Dispatchers.IO) {
-            ///此刻要判断是否拥有存储权限不然没法做到如果存在就不保存
-            if (existNotSave) {
-//                if (checkReadStoragePermission()) {
-                    if (exist(relativePath, filename)) {
-                        result.success(
-                            SaveResultModel(
-                                true
-                            ).toHashMap()
-                        )
-                        return@launch
-                    }
-//                } else {
-//                    ///没有权限
-//                    result.success(
-//                        SaveResultModel(
-//                            false,
-//                            "existNotSave must have read storage permission when it is true"
-//                        ).toHashMap()
-//                    )
-//                    return@launch
-//                }
-
+        mainScope.launch {
+            // Check if the file already exists in the gallery, if `skipIfExists` is true.
+            if (skipIfExists && fileExistsInGallery(relativePath, fileName)) {
+                result.success(SaveResultModel(true).toHashMap())
+                return@launch
             }
-            val uri = generateUri(extension, filename, relativePath)
-            try {
-                context.contentResolver.openOutputStream(uri, "w")?.use {
-                    if (extension == "gif") {
-                        it.write(image)
-                    } else {
-                        var bmp: Bitmap? = null
-                        try {
-                            bmp = BitmapFactory.decodeByteArray(
-                                image,
-                                0,
-                                image.size
-                            )
-                            bmp.compress(
-                                if (extension == "png") {
-                                    Bitmap.CompressFormat.PNG
-                                } else {
-                                    Bitmap.CompressFormat.JPEG
-                                }, quality, it
-                            )
-                        } finally {
-                            bmp?.recycle()
-                        }
-                    }
-                    it.flush()
-                    scanUri(context, uri, "image/$extension")
-                    result.success(
-                        SaveResultModel(
-                            uri.toString().isNotEmpty(),
-                            null
-                        ).toHashMap()
-                    )
-                }
 
-            } catch (e: IOException) {
-                e.printStackTrace()
-                result.success(
-                    SaveResultModel(
-                        false,
-                        "Couldn't save the image\n$uri"
-                    ).toHashMap()
-                )
-            }
+            // Create a URI to save the image in the gallery.
+            val uri = createMediaUri(extension, fileName, relativePath)
+            val isSuccess = saveImage(image, quality, extension, uri)
+
+            // Scan and make the saved image visible in the gallery.
+            scanUri(context, uri, "image/$extension")
+            result.success(SaveResultModel(isSuccess, if (!isSuccess) "Couldn't save the image" else null).toHashMap())
         }
     }
 
     override fun saveFileToGallery(
-        path: String, filename: String, relativePath: String,
-        existNotSave: Boolean, result: MethodResult
+        filePath: String,
+        fileName: String,
+        relativePath: String,
+        skipIfExists: Boolean,
+        result: MethodResult
     ) {
-        mainScope.launch(Dispatchers.IO) {
-            ///此刻要判断是否拥有存储权限不然没法做到如果存在就不保存
-            if (existNotSave) {
-//                if (checkReadStoragePermission()) {
-                    if (exist(relativePath, filename)) {
-                        result.success(
-                            SaveResultModel(
-                                true
-                            ).toHashMap()
-                        )
-                        return@launch
-                    }
-//                } else {
-//                    ///没有权限
-//                    result.success(
-//                        SaveResultModel(
-//                            false,
-//                            "existNotSave must have read storage permission when it is true"
-//                        ).toHashMap()
-//                    )
-//                    return@launch
-//                }
-
+        mainScope.launch {
+            // Check if the file already exists in the gallery, if `skipIfExists` is true.
+            if (skipIfExists && fileExistsInGallery(relativePath, fileName)) {
+                result.success(SaveResultModel(true).toHashMap())
+                return@launch
             }
-            val file = File(path)
+
+            val file = File(filePath)
             val extension = file.extension
             val mimeType = getMIMEType(extension)
 
             if (mimeType.isNullOrEmpty()) {
-                result.success(
-                    SaveResultModel(
-                        false,
-                        "Unsupported file"
-                    ).toHashMap()
-                )
+                result.success(SaveResultModel(false, "Unsupported file type").toHashMap())
                 return@launch
             }
 
-            val uri = generateUri(extension, filename, relativePath)
+            // Create a URI to save the file in the gallery.
+            val uri = createMediaUri(extension, fileName, relativePath)
+            val isSuccess = saveFile(file, uri)
 
-            try {
-                context.contentResolver.openOutputStream(uri, "w")?.use { outputStream ->
-                    val fileInputStream = FileInputStream(path)
-
-                    val buffer = ByteArray(10240)
-                    var count: Int
-                    while (fileInputStream.read(buffer).also { count = it } > 0) {
-                        outputStream.write(buffer, 0, count)
-                    }
-
-                    outputStream.flush()
-                    outputStream.close()
-                    fileInputStream.close()
-                    scanUri(context, uri, mimeType ?: "")
-                    result.success(
-                        SaveResultModel(
-                            uri.toString().isNotEmpty(),
-                            null
-                        ).toHashMap()
-                    )
-                }
-
-            } catch (e: IOException) {
-                e.printStackTrace()
-                result.success(
-                    SaveResultModel(
-                        false,
-                        "Couldn't save the file\n$uri"
-                    ).toHashMap()
-                )
-            }
+            // Scan and make the saved file visible in the gallery.
+            scanUri(context, uri, mimeType)
+            result.success(SaveResultModel(isSuccess, if (!isSuccess) "Couldn't save the file" else null).toHashMap())
         }
     }
 
-
-    @SuppressLint("InlinedApi")
-    private fun exist(relativePath: String, fileName: String): Boolean {
-        val projection = arrayOf(
-            MediaStore.Images.Media._ID,
-        )
-        //想不到吧？居然是这样写？
-        //咕噜咕噜，这不翻源码写的出来？
-        val selection = "${
-            MediaStore.Images.Media.RELATIVE_PATH
-        } LIKE ? AND ${
-            MediaStore.Images.Media.DISPLAY_NAME
-        } = ?"
-        val selectionArgs = arrayOf(
-            "%${
-                relativePath
-            }%",
-            fileName,
-        )
-        val sortOrder = "${
-            MediaStore.Images.Media.DISPLAY_NAME
-        } ASC"
+    // Saves the image to the given URI.
+    private fun saveImage(imageBytes: ByteArray, quality: Int, extension: String, uri: Uri): Boolean {
         return try {
-            val query = context.contentResolver.query(
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                if (extension.equals("gif", ignoreCase = true)) {
+                    outputStream.write(imageBytes)
+                } else {
+                    val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                    return try {
+                        val format = if (extension.equals("png", ignoreCase = true)) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+                        bitmap.compress(format, quality, outputStream)
+                        outputStream.flush()
+                        true
+                    } finally {
+                        bitmap.recycle() // Properly release the Bitmap's memory
+                    }
+                }
+                outputStream.flush()
+                true
+            } ?: false
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    // Saves a file to the specified URI.
+    private fun saveFile(file: File, uri: Uri): Boolean {
+        return try {
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                FileInputStream(file).use { fileInputStream ->
+                    val buffer = ByteArray(1024)
+                    var bytesRead: Int
+                    while (fileInputStream.read(buffer).also { bytesRead = it } > 0) {
+                        outputStream.write(buffer, 0, bytesRead)
+                    }
+                    outputStream.flush()
+                }
+                true
+            } ?: false
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    // Creates a URI for media content with the given parameters.
+    @SuppressLint("InlinedApi")
+    private fun createMediaUri(extension: String, fileName: String, relativePath: String?): Uri {
+        val mimeType = getMIMEType(extension)
+
+        // Determine the type of content URI based on MIME type.
+        val contentUri = when {
+            mimeType?.startsWith("video") == true -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            mimeType?.startsWith("audio") == true -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
+
+        // Set a default relative path if it's null or empty.
+        val defaultRelativePath = when {
+            mimeType?.startsWith("video") == true -> Environment.DIRECTORY_MOVIES
+            mimeType?.startsWith("audio") == true -> Environment.DIRECTORY_MUSIC
+            else -> Environment.DIRECTORY_PICTURES
+        }
+
+        val resolvedRelativePath = if (relativePath.isNullOrEmpty()) defaultRelativePath else relativePath
+
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, resolvedRelativePath)
+            if (!mimeType.isNullOrEmpty()) put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+        }
+
+        return context.contentResolver.insert(contentUri, contentValues)
+            ?: throw IOException("Failed to create Media URI for $fileName")
+    }
+
+    // Checks if a file with the given name already exists in the specified relative path.
+    @SuppressLint("InlinedApi")
+    private fun fileExistsInGallery(relativePath: String, fileName: String): Boolean {
+        val projection = arrayOf(MediaStore.Images.Media._ID)
+        val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Images.Media.DISPLAY_NAME} = ?"
+        val selectionArgs = arrayOf("%$relativePath%", fileName)
+        val sortOrder = "${MediaStore.Images.Media.DISPLAY_NAME} ASC"
+
+        return try {
+            context.contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 projection,
                 selection,
                 selectionArgs,
                 sortOrder
-            )
-            val count = query?.count ?: 0
-            query?.close()
-            count > 0
+            )?.use { cursor ->
+                cursor.count > 0
+            } ?: false
         } catch (e: Exception) {
             false
         }
     }
 
-    @SuppressLint("InlinedApi")
-    private fun generateUri(extension: String, fileName: String, relativePath: String): Uri {
-
-        var uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-
-        val values = ContentValues()
-        values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-        values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-        val mimeType = getMIMEType(extension)
-        if (!TextUtils.isEmpty(mimeType)) {
-            values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-            if (mimeType!!.startsWith("video")) {
-                uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-            } else if (mimeType.startsWith("audio")) {
-                uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-            }
-        }
-        return context.contentResolver.insert(uri, values)!!
-    }
-
+    // Releases resources when the delegate is closed.
     override fun onClose() {
         super.onClose()
         mainScope.cancel()
     }
-
 }
