@@ -13,13 +13,16 @@ abstract class SaverDelegate(protected val context: Context) {
         filename: String,
         extension: String,
         relativePath: String,
-        existNotSave: Boolean,
+        skipIfExists: Boolean,
         result: MethodResult
     )
 
     abstract fun saveFileToGallery(
-        path: String, filename: String, relativePath: String,
-        existNotSave: Boolean, result: MethodResult
+        filePath: String,
+        filename: String,
+        relativePath: String,
+        skipIfExists: Boolean,
+        result: MethodResult
     )
 
     open fun onClose() {}
