@@ -17,10 +17,10 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
       self.result = result
       if call.method == "saveImageToGallery" {
         let arguments = call.arguments as? [String: Any] ?? [String: Any]()
-        guard let imageData = (arguments["imageBytes"] as? FlutterStandardTypedData)?.data,
+        guard let imageData = (arguments["image"] as? FlutterStandardTypedData)?.data,
             let image = UIImage(data: imageData),
             let quality = arguments["quality"] as? Int,
-            let _ = arguments["name"]
+            let _ = arguments["fileName"]
             else { return }
         let newImage = image.jpegData(compressionQuality: CGFloat(quality / 100))!
         saveImage(UIImage(data: newImage) ?? image)
@@ -28,7 +28,7 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
         guard let arguments = call.arguments as? [String: Any],
               let path = arguments["path"] as? String
               else { return }
-        if (isImageFile(filename: path)) {
+        if (isImageFile(fileName: path)) {
             saveImageAtFileUrl(path)
         } else {
             if (UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(path)) {
@@ -115,22 +115,22 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
         result?(saveResult.toDic())
     }
 
-    func isImageFile(filename: String) -> Bool {
-        return filename.hasSuffix(".jpg")
-            || filename.hasSuffix(".png")
-            || filename.hasSuffix(".jpeg")
-            || filename.hasSuffix(".JPEG")
-            || filename.hasSuffix(".JPG")
-            || filename.hasSuffix(".PNG")
-            || filename.hasSuffix(".gif")
-            || filename.hasSuffix(".GIF")
-            || filename.hasSuffix(".heic")
-            || filename.hasSuffix(".HEIC")
+    func isImageFile(fileName: String) -> Bool {
+        return fileName.hasSuffix(".jpg")
+            || fileName.hasSuffix(".png")
+            || fileName.hasSuffix(".jpeg")
+            || fileName.hasSuffix(".JPEG")
+            || fileName.hasSuffix(".JPG")
+            || fileName.hasSuffix(".PNG")
+            || fileName.hasSuffix(".gif")
+            || fileName.hasSuffix(".GIF")
+            || fileName.hasSuffix(".heic")
+            || fileName.hasSuffix(".HEIC")
     }
     
-    func isImageGifFile(filename: String) -> Bool {
-        return filename.hasSuffix(".gif")
-        || filename.hasSuffix(".GIF")
+    func isImageGifFile(fileName: String) -> Bool {
+        return fileName.hasSuffix(".gif")
+        || fileName.hasSuffix(".GIF")
     }
 }
 

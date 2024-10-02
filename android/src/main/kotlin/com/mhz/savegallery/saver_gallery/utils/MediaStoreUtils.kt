@@ -61,7 +61,7 @@ object MediaStoreUtils {
     /**
      * We create a MediaStore [Uri] where an image will be stored
      */
-    suspend fun createImageUri(context: Context, filename: String, mimeType: String): Uri? {
+    suspend fun createImageUri(context: Context, fileName: String, mimeType: String): Uri? {
         val imageCollection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         } else {
@@ -70,7 +70,7 @@ object MediaStoreUtils {
 
         return withContext(Dispatchers.IO) {
             val newImage = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
                 put(MediaStore.Images.Media.MIME_TYPE, mimeType)
             }
 
@@ -83,7 +83,7 @@ object MediaStoreUtils {
     /**
      * We create a MediaStore [Uri] where a video will be stored
      */
-    suspend fun createVideoUri(context: Context, filename: String, mimeType: String): Uri? {
+    suspend fun createVideoUri(context: Context, fileName: String, mimeType: String): Uri? {
         val videoCollection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         } else {
@@ -92,7 +92,7 @@ object MediaStoreUtils {
 
         return withContext(Dispatchers.IO) {
             val newVideo = ContentValues().apply {
-                put(MediaStore.Video.Media.DISPLAY_NAME, filename)
+                put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
                 put(MediaStore.Video.Media.MIME_TYPE, mimeType)
             }
 
@@ -105,7 +105,7 @@ object MediaStoreUtils {
     /**
      * We create a MediaStore [Uri] where a audio will be stored
      */
-    suspend fun createAudioUri(context: Context, filename: String, mimeType: String): Uri? {
+    suspend fun createAudioUri(context: Context, fileName: String, mimeType: String): Uri? {
         val audioCollection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         } else {
@@ -114,7 +114,7 @@ object MediaStoreUtils {
 
         return withContext(Dispatchers.IO) {
             val newAudio = ContentValues().apply {
-                put(MediaStore.Audio.Media.DISPLAY_NAME, filename)
+                put(MediaStore.Audio.Media.DISPLAY_NAME, fileName)
                 put(MediaStore.Audio.Media.MIME_TYPE, mimeType)
             }
 
@@ -128,13 +128,13 @@ object MediaStoreUtils {
      * We create a MediaStore [Uri] where an image will be stored
      */
     @RequiresApi(Build.VERSION_CODES.Q)
-    suspend fun createDownloadUri(context: Context, filename: String): Uri? {
+    suspend fun createDownloadUri(context: Context, fileName: String): Uri? {
         val downloadsCollection =
             MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
         return withContext(Dispatchers.IO) {
             val newImage = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, filename)
+                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
             }
 
             // This method will perform a binder transaction which is better to execute off the main
@@ -262,7 +262,7 @@ object MediaStoreUtils {
 
                 FileResource(
                     uri = contentUri,
-                    filename = cursor.getString(displayNameColumn),
+                    fileName = cursor.getString(displayNameColumn),
                     size = cursor.getLong(sizeColumn),
                     type = FileType.getEnum(cursor.getInt(mediaTypeColumn)),
                     mimeType = cursor.getString(mimeTypeColumn),
@@ -319,7 +319,7 @@ object MediaStoreUtils {
 
                     mediaList += FileResource(
                         uri = contentUri,
-                        filename = cursor.getString(displayNameColumn),
+                        fileName = cursor.getString(displayNameColumn),
                         size = cursor.getLong(sizeColumn),
                         type = FileType.getEnum(cursor.getInt(mediaTypeColumn)),
                         mimeType = cursor.getString(mimeTypeColumn),
