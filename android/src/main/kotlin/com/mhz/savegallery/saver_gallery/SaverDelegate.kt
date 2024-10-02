@@ -10,7 +10,7 @@ abstract class SaverDelegate(protected val context: Context) {
     abstract fun saveImageToGallery(
         image: ByteArray,
         quality: Int,
-        filename: String,
+        fileName: String,
         extension: String,
         relativePath: String,
         skipIfExists: Boolean,
@@ -19,7 +19,7 @@ abstract class SaverDelegate(protected val context: Context) {
 
     abstract fun saveFileToGallery(
         filePath: String,
-        filename: String,
+        fileName: String,
         relativePath: String,
         skipIfExists: Boolean,
         result: MethodResult

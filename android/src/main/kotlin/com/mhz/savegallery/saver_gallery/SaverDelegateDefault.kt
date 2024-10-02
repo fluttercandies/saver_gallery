@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.getMIMEType
 
 /**
  * Implementation of [SaverDelegate] for default saving behavior.
@@ -33,7 +34,7 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
      *
      * @param imageBytes The image data in bytes.
      * @param quality The quality of the image (applicable for JPEG).
-     * @param filename The name of the file to save.
+     * @param fileName The name of the file to save.
      * @param extension The file extension (e.g., "jpg", "png").
      * @param relativePath The relative path in the gallery where the file will be saved.
      * @param skipIfExists If true, skips saving if the file already exists.
@@ -42,14 +43,14 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
     override fun saveImageToGallery(
         imageBytes: ByteArray,
         quality: Int,
-        filename: String,
+        fileName: String,
         extension: String,
         relativePath: String,
         skipIfExists: Boolean,
         result: MethodChannel.Result
     ) {
         mainScope.launch {
-            val saveResult = saveImage(imageBytes, quality, extension, filename, skipIfExists, relativePath)
+            val saveResult = saveImage(imageBytes, quality, extension, fileName, skipIfExists, relativePath)
             result.success(saveResult)
         }
     }
@@ -58,20 +59,20 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
      * Saves a file to the gallery.
      *
      * @param filePath The path of the file to be saved.
-     * @param filename The name of the file to save in the gallery.
+     * @param fileName The name of the file to save in the gallery.
      * @param relativePath The relative path in the gallery where the file will be saved.
      * @param skipIfExists If true, skips saving if the file already exists.
      * @param result The method result to communicate success or failure.
      */
     override fun saveFileToGallery(
         filePath: String,
-        filename: String,
+        fileName: String,
         relativePath: String,
         skipIfExists: Boolean,
         result: MethodChannel.Result
     ) {
         mainScope.launch {
-            val saveResult = saveFile(filePath, filename, relativePath, skipIfExists)
+            val saveResult = saveFile(filePath, fileName, relativePath, skipIfExists)
             result.success(saveResult)
         }
     }
@@ -117,22 +118,22 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
      * Saves a file from the specified path to the gallery.
      *
      * @param filePath The path of the file to be saved.
-     * @param filename The name of the file to save in the gallery.
+     * @param fileName The name of the file to save in the gallery.
      * @param relativePath The relative path in the gallery where the file will be saved.
      * @param skipIfExists If true, skips saving if the file already exists.
      * @return A [SaveResultModel] indicating the outcome of the save operation.
      */
     private fun saveFile(
         filePath: String,
-        filename: String,
+        fileName: String,
         relativePath: String,
         skipIfExists: Boolean
     ): HashMap<String, Any?> {
-        return if (skipIfExists && doesFileExist(relativePath, filename)) {
+        return if (skipIfExists && doesFileExist(relativePath, fileName)) {
             SaveResultModel(true, null).toHashMap()
         } else {
             try {
-                val fileUri = generateFileUri(filename, relativePath)
+                val fileUri = generateFileUri(fileName, relativePath)
                 FileInputStream(File(filePath)).use { fileInputStream ->
                     context.contentResolver?.openOutputStream(fileUri)?.use { outputStream ->
                         val buffer = ByteArray(1024)

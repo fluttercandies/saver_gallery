@@ -109,7 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
         String picturesPath = "${DateTime.now().millisecondsSinceEpoch}.jpg";
         final result = await SaverGallery.saveImage(
           byteData.buffer.asUint8List(),
-          filename: picturesPath,
+          fileName: picturesPath,
           skipIfExists: false,
         );
         _toastInfo(result.toString());
@@ -130,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final result = await SaverGallery.saveImage(
         Uint8List.fromList(response.data),
         quality: 60,
-        filename: picturesPath,
+        fileName: picturesPath,
         androidRelativePath: "Pictures/NetworkImages",
         skipIfExists: true,
       );
@@ -150,7 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
       String gifPath = "network_gif.gif";
       final result = await SaverGallery.saveImage(
         Uint8List.fromList(response.data),
-        filename: gifPath,
+        fileName: gifPath,
         androidRelativePath: "Pictures/Gifs",
         skipIfExists: false,
       );
@@ -181,7 +181,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       final result = await SaverGallery.saveFile(
         filePath: savePath,
-        filename: 'downloaded_video.mp4',
+        fileName: 'downloaded_video.mp4',
         androidRelativePath: "Movies",
         skipIfExists: true,
       );

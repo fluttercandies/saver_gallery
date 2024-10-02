@@ -18,7 +18,7 @@ class SaverGallery {
   /// [imageBytes] cannot be null.
   /// [quality] specifies the quality of the image (for JPG files).
   /// [extension] is optional; if not provided, it will be inferred from the file name.
-  /// [filename] is the name of the file to save.
+  /// [fileName] is the name of the file to save.
   /// [androidRelativePath] is the folder path for Android devices. Defaults to the appropriate type-based path.
   /// [skipIfExists] if true, skips saving if the file already exists.
   ///
@@ -27,28 +27,28 @@ class SaverGallery {
       Uint8List imageBytes, {
         int quality = 100,
         String? extension,
-        required String filename,
+        required String fileName,
         String? androidRelativePath,
         required bool skipIfExists,
       }) async {
     // Determine the MIME type and file extension.
-    String? mimeType = lookupMimeType(filename, headerBytes: imageBytes);
-    extension ??= _extractFileExtension(mimeType, filename);
+    String? mimeType = lookupMimeType(fileName, headerBytes: imageBytes);
+    extension ??= _extractFileExtension(mimeType, fileName);
 
     // Handle special case for GIF files on iOS.
     if ((extension.toLowerCase() == 'gif') && Platform.isIOS) {
       File tempFile = await _createTempFile('gif', imageBytes);
       return saveFile(
         filePath: tempFile.path,
-        filename: filename,
+        fileName: fileName,
         androidRelativePath: androidRelativePath ?? _getDefaultRelativePathForType(mimeType),
         skipIfExists: skipIfExists,
       );
     }
 
     // Append the file extension if missing.
-    if (!filename.contains('.')) {
-      filename += '.$extension';
+    if (!fileName.contains('.')) {
+      fileName += '.$extension';
     }
 
     try {
@@ -58,7 +58,7 @@ class SaverGallery {
         <String, dynamic>{
           'image': imageBytes,
           'quality': quality,
-          'filename': filename,
+          'fileName': fileName,
           'extension': extension,
           'relativePath': androidRelativePath ?? _getDefaultRelativePathForType(mimeType),
           'skipIfExists': skipIfExists,
@@ -75,14 +75,14 @@ class SaverGallery {
   /// Saves the specified file to the local device media gallery.
   ///
   /// [filePath] is the path of the file to be saved.
-  /// [filename] is the name of the file to save in the gallery.
+  /// [fileName] is the name of the file to save in the gallery.
   /// [androidRelativePath] is the folder path for Android devices. Defaults to the appropriate type-based path.
   /// [skipIfExists] if true, skips saving if the file already exists.
   ///
   /// Returns a [SaveResult] indicating success or failure.
   static Future<SaveResult> saveFile({
     required String filePath,
-    required String filename,
+    required String fileName,
     String? androidRelativePath,
     required bool skipIfExists,
   }) async {
@@ -95,7 +95,7 @@ class SaverGallery {
         'saveFileToGallery',
         <String, dynamic>{
           'filePath': filePath,
-          'filename': filename,
+          'fileName': fileName,
           'relativePath': androidRelativePath ?? _getDefaultRelativePathForType(mimeType),
           'skipIfExists': skipIfExists,
         },
@@ -129,12 +129,12 @@ class SaverGallery {
   /// Extracts the file extension from the MIME type or falls back to the file name.
   ///
   /// If the MIME type is null, it attempts to extract the extension from the file name.
-  static String _extractFileExtension(String? mimeType, String filename) {
+  static String _extractFileExtension(String? mimeType, String fileName) {
     if (mimeType != null) {
       String? ext = extensionFromMime(mimeType);
-      return ext ?? path.extension(filename).replaceFirst(".", '');
+      return ext ?? path.extension(fileName).replaceFirst(".", '');
     }
-    return path.extension(filename).replaceFirst(".", '');
+    return path.extension(fileName).replaceFirst(".", '');
   }
 
   /// Creates a temporary file with the specified extension and writes the given bytes to it.

@@ -27,7 +27,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
     override fun saveImageToGallery(
         image: ByteArray,
         quality: Int,
-        filename: String,
+        fileName: String,
         extension: String,
         relativePath: String,
         skipIfExists: Boolean,
@@ -35,13 +35,13 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
     ) {
         mainScope.launch {
             // Check if the file already exists in the gallery, if `skipIfExists` is true.
-            if (skipIfExists && fileExistsInGallery(relativePath, filename)) {
+            if (skipIfExists && fileExistsInGallery(relativePath, fileName)) {
                 result.success(SaveResultModel(true).toHashMap())
                 return@launch
             }
 
             // Create a URI to save the image in the gallery.
-            val uri = createMediaUri(extension, filename, relativePath)
+            val uri = createMediaUri(extension, fileName, relativePath)
             val isSuccess = saveImage(image, quality, extension, uri)
 
             // Scan and make the saved image visible in the gallery.
@@ -52,14 +52,14 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
 
     override fun saveFileToGallery(
         filePath: String,
-        filename: String,
+        fileName: String,
         relativePath: String,
         skipIfExists: Boolean,
         result: MethodResult
     ) {
         mainScope.launch {
             // Check if the file already exists in the gallery, if `skipIfExists` is true.
-            if (skipIfExists && fileExistsInGallery(relativePath, filename)) {
+            if (skipIfExists && fileExistsInGallery(relativePath, fileName)) {
                 result.success(SaveResultModel(true).toHashMap())
                 return@launch
             }
@@ -74,7 +74,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
             }
 
             // Create a URI to save the file in the gallery.
-            val uri = createMediaUri(extension, filename, relativePath)
+            val uri = createMediaUri(extension, fileName, relativePath)
             val isSuccess = saveFile(file, uri)
 
             // Scan and make the saved file visible in the gallery.
