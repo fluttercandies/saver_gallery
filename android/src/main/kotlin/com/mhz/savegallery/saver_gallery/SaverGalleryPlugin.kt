@@ -29,13 +29,13 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
 
     // Handles saving images to the gallery.
     private fun handleSaveImage(call: MethodCall, result: MethodResult) {
-        val imageBytes = call.argument<ByteArray>("imageBytes") ?: run {
+        val imageBytes = call.argument<ByteArray>("image") ?: run {
             result.error("INVALID_ARGUMENT", "imageBytes is required", null)
             return
         }
         val quality = call.argument<Int>("quality") ?: 100
-        val filename = call.argument<String>("name") ?: run {
-            result.error("INVALID_ARGUMENT", "Filename is required", null)
+        val fileName = call.argument<String>("fileName") ?: run {
+            result.error("INVALID_ARGUMENT", "fileName is required", null)
             return
         }
         val extension = call.argument<String>("extension") ?: run {
@@ -48,7 +48,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
         delegate?.saveImageToGallery(
             image = imageBytes,
             quality = quality,
-            filename = filename,
+            fileName = fileName,
             extension = extension,
             relativePath = relativePath,
             skipIfExists = skipIfExists,
@@ -58,12 +58,12 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
 
     // Handles saving files to the gallery.
     private fun handleSaveFile(call: MethodCall, result: MethodResult) {
-        val filePath = call.argument<String>("path") ?: run {
+        val filePath = call.argument<String>("filePath") ?: run {
             result.error("INVALID_ARGUMENT", "File path is required", null)
             return
         }
-        val filename = call.argument<String>("name") ?: run {
-            result.error("INVALID_ARGUMENT", "Filename is required", null)
+        val fileName = call.argument<String>("fileName") ?: run {
+            result.error("INVALID_ARGUMENT", "fileName is required", null)
             return
         }
         val relativePath = call.argument<String>("relativePath") ?: "Download"
@@ -71,7 +71,7 @@ class SaverGalleryPlugin : FlutterPlugin, MethodCallHandler {
 
         delegate?.saveFileToGallery(
             filePath = filePath,
-            filename = filename,
+            fileName = fileName,
             relativePath = relativePath,
             skipIfExists = skipIfExists,
             result = result
