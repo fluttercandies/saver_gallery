@@ -4,7 +4,7 @@
 # This file should be version controlled.
 
 version:
-  revision: e37cf85ec239995f7d8030d686befa2302f5a873
+  revision: b51e29e027df2714cd9bd239ad8644cda7b24052
   channel: dev
 
 project_type: plugin
@@ -13,17 +13,17 @@ project_type: plugin
 migration:
   platforms:
     - platform: root
-      create_revision: e37cf85ec239995f7d8030d686befa2302f5a873
-      base_revision: e37cf85ec239995f7d8030d686befa2302f5a873
+      create_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
+      base_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
     - platform: android
-      create_revision: e37cf85ec239995f7d8030d686befa2302f5a873
-      base_revision: e37cf85ec239995f7d8030d686befa2302f5a873
+      create_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
+      base_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
     - platform: ios
-      create_revision: e37cf85ec239995f7d8030d686befa2302f5a873
-      base_revision: e37cf85ec239995f7d8030d686befa2302f5a873
+      create_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
+      base_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
     - platform: ohos
-      create_revision: e37cf85ec239995f7d8030d686befa2302f5a873
-      base_revision: e37cf85ec239995f7d8030d686befa2302f5a873
+      create_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
+      base_revision: b51e29e027df2714cd9bd239ad8644cda7b24052
 
   # User provided section
 
