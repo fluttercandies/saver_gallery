@@ -11,6 +11,16 @@
 
 The `saver_gallery` plugin enables you to save images and other media files (such as videos) directly to the Android and iOS gallery. While the `image_picker` plugin allows you to select images from the gallery, it does not support saving them back to the gallery. `saver_gallery` provides this essential functionality, making it easy to save media files in Flutter applications.
 
+## already supported ohos next
+[dev](https://github.com/fluttercandies/saver_gallery/tree/ohos)
+```yaml
+dependencies:
+  saver_gallery: 
+    git:
+      url: https://github.com/fluttercandies/saver_gallery.git
+      ref: ohos
+```
+
 ---
 
 ## Features
@@ -28,7 +38,7 @@ To include `saver_gallery` in your project, add it as a dependency in your `pubs
 
 ```yaml
 dependencies:
-  saver_gallery: ^3.0.7
+  saver_gallery: ^3.0.9
 ```
 
 ---
