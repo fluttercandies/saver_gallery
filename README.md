@@ -38,7 +38,7 @@ To include `saver_gallery` in your project, add it as a dependency in your `pubs
 
 ```yaml
 dependencies:
-  saver_gallery: ^3.0.9
+  saver_gallery: ^3.0.10
 ```
 
 ---
