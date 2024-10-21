@@ -26,7 +26,7 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
         saveImage(UIImage(data: newImage) ?? image)
       } else if (call.method == "saveFileToGallery") {
         guard let arguments = call.arguments as? [String: Any],
-              let path = arguments["path"] as? String
+              let path = arguments["filePath"] as? String
               else { return }
         if (isImageFile(fileName: path)) {
             saveImageAtFileUrl(path)

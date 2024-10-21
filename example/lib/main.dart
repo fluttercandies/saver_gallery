@@ -144,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _saveGif() async {
     try {
       final response = await Dio().get(
-        "https://hyjdoc.oss-cn-beijing.aliyuncs.com/hyj-doc-flutter-demo-run.gif",
+        "https://test-1300597023.cos.ap-singapore.myqcloud.com/hyj-doc-flutter-demo-run%20%281%29.gif",
         options: Options(responseType: ResponseType.bytes),
       );
       String gifPath = "network_gif.gif";
@@ -165,7 +165,7 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       final dir = await getTemporaryDirectory();
       String savePath = "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.mp4";
-      String fileUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+      String fileUrl = "https://test-1300597023.cos.ap-singapore.myqcloud.com/ForBiggerBlazes.mp4";
 
       await Dio().download(
         fileUrl,
@@ -193,6 +193,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   /// Displays a toast message with the given information.
   void _toastInfo(String info) {
+    print(info);
     Fluttertoast.showToast(msg: info, toastLength: Toast.LENGTH_LONG);
   }
 }
