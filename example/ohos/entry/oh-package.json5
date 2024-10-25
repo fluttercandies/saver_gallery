@@ -10,6 +10,6 @@
     "path_provider_ohos": "file:../har/path_provider_ohos.har",
     "permission_handler_ohos": "file:../har/permission_handler_ohos.har",
     "device_info_plus": "file:../har/device_info_plus.har",
-    "saver_gallery": "file:../har/saver_gallery.har"
+    "saver_gallery": "../../../ohos"
   }
 }

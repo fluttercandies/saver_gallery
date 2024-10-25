@@ -26,8 +26,8 @@
   },
   "modules": [
     {
-      "name": "entry",
-      "srcPath": "./entry",
+      "name": "saver_gallery",
+      "srcPath": "../../ohos",
       "targets": [
         {
           "name": "default",
