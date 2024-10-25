@@ -395,6 +395,20 @@ export class FileMimeTypeUtil {
     return suffix
   }
 
+  getFileName(fileName: string): string {
+    const unKnown: string = '';
+    if (StringUtil.isEmpty(fileName)) {
+      return unKnown;
+    }
+
+    const splitList = fileName.split('.')
+    if (splitList.length < 2) {
+      return unKnown;
+    }
+
+    return splitList[splitList.length-2]
+  }
+
   getFileTypeOrder(fileName: string): number {
     const mimeType = this.getFileMimeType(fileName)
     return mimeType.getFileTypeSort()

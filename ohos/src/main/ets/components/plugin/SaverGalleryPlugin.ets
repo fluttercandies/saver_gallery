@@ -23,6 +23,7 @@ export default class SaverGalleryPlugin implements FlutterPlugin, MethodCallHand
   private applicationContext: Context | null = null;
   private binding: AbilityPluginBinding | null = null;
   private fileMimeType: FileMimeTypeUtil = new FileMimeTypeUtil();
+
   constructor() {
   }
 
@@ -63,25 +64,26 @@ export default class SaverGalleryPlugin implements FlutterPlugin, MethodCallHand
     }
   }
 
-  async save(path: string, fileNameExtension: string, photoType: photoAccessHelper.PhotoType, title?: string) {
+  async save(path: string, fileNameExtension: string, photoType: photoAccessHelper.PhotoType, title: string) {
     let phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.binding?.getAbility().context);
     try {
       let srcFileUris: Array<string> = [path];
       let photoCreationConfigs: Array<photoAccessHelper.PhotoCreationConfig> = [
         {
-          title,
+          title: this.fileMimeType.getFileName(title),
           fileNameExtension,
           photoType,
           subtype: photoAccessHelper.PhotoSubtype.DEFAULT
         }
       ];
-
+      // 基于弹窗授权的方式获取媒体库的目标uri
       let desFileUris: Array<string> = await phAccessHelper.showAssetsCreationDialog(srcFileUris, photoCreationConfigs);
-      let srcFile: fs.File = await fs.open(srcFileUris[0], fs.OpenMode.READ_WRITE);
-      let targetFile: fs.File = await fs.open(desFileUris[0], fs.OpenMode.READ_WRITE);
-      fs.copyFileSync(srcFile.fd, targetFile.fd);
+      // 将来源于应用沙箱的照片内容写入媒体库的目标uri
+      let desFile: fs.File = await fs.open(desFileUris[0], fs.OpenMode.WRITE_ONLY);
+      let srcFile: fs.File = await fs.open(srcFileUris[0], fs.OpenMode.READ_ONLY);
+      await fs.copyFile(srcFile.fd, desFile.fd);
       fs.closeSync(srcFile);
-      fs.closeSync(targetFile);
+      fs.closeSync(desFile);
       return SaveResultModel.toHashMap(true, desFileUris[0], "success save");
     } catch (err) {
       return SaveResultModel.toHashMap(false, null, `save failed, errCode is ${err.code}, errMsg is ${err.message}`);

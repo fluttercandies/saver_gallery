@@ -6,9 +6,9 @@
         "type": "HarmonyOS",
         "material": {
           "certpath": "/Users/housemao/.ohos/config/default_ohos_H-buRIWYzisXMr3Zin99LcsHy2BY5r1OYQJiw4AHTP8=.cer",
-          "storePassword": "0000001A7B607CB33192AB3B5583DD0DE1A63CA0149B31219EB3E8001691B36F7E57AFE16CD6CEA9D214",
+          "storePassword": "0000001BFCBDB70381A52715B1E8F451DE94172D02423E1429873287BCC0B282FF06D7CD501F687353D1F4",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001A388DB2638840D69873F470807140F3839A3D9A561ADF1969D150AA8B818F60CD9434B6B21B01",
+          "keyPassword": "0000001B8484DB3D68381B467CAD38A75C49C60E660E0BE52D4954A27813D350A3E3752331BFC7CE822D3C",
           "profile": "/Users/housemao/.ohos/config/default_ohos_H-buRIWYzisXMr3Zin99LcsHy2BY5r1OYQJiw4AHTP8=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/housemao/.ohos/config/default_ohos_H-buRIWYzisXMr3Zin99LcsHy2BY5r1OYQJiw4AHTP8=.p12"
@@ -26,8 +26,8 @@
   },
   "modules": [
     {
-      "name": "saver_gallery",
-      "srcPath": "../../ohos",
+      "name": "entry",
+      "srcPath": "./entry",
       "targets": [
         {
           "name": "default",
