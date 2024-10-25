@@ -28,17 +28,9 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^1.0.5
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
+dependency_overrides:
   permission_handler:
     git:
       url: "https://gitee.com/openharmony-sig/flutter_permission_handler.git"
@@ -58,9 +50,10 @@ dev_dependencies:
       path: "packages/device_info_plus/device_info_plus"
   dio: ^5.2.1+1
 
-  saver_gallery:
-    path: ../
-  cupertino_icons: ^1.0.5
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -58,7 +58,7 @@ packages:
     source: hosted
     version: "1.0.8"
   device_info_plus:
-    dependency: "direct dev"
+    dependency: "direct overridden"
     description:
       path: "packages/device_info_plus/device_info_plus"
       ref: HEAD
@@ -75,7 +75,7 @@ packages:
     source: hosted
     version: "7.0.1"
   dio:
-    dependency: "direct dev"
+    dependency: "direct overridden"
     description:
       name: dio
       sha256: "5598aa796bbf4699afd5c67c0f5f6e2ed542afc956884b9cd58c306966efc260"
@@ -138,7 +138,7 @@ packages:
     source: sdk
     version: "0.0.0"
   fluttertoast:
-    dependency: "direct dev"
+    dependency: "direct overridden"
     description:
       path: "."
       ref: HEAD
@@ -219,7 +219,7 @@ packages:
     source: hosted
     version: "1.9.0"
   path_provider:
-    dependency: "direct dev"
+    dependency: "direct overridden"
     description:
       path: "packages/path_provider/path_provider"
       ref: br_optimize_har_structure
@@ -277,7 +277,7 @@ packages:
     source: hosted
     version: "2.3.0"
   permission_handler:
-    dependency: "direct dev"
+    dependency: "direct overridden"
     description:
       path: permission_handler
       ref: HEAD
@@ -348,7 +348,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "3.0.10"
+    version: "4.0.0"
   sky_engine:
     dependency: transitive
     description: flutter

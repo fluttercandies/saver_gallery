@@ -1,3 +1,6 @@
+## 4.0.0
+
+* ohos support
 ## 3.0.10
 
 * fix ios save file failed
