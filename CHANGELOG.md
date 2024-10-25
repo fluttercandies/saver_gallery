@@ -1,3 +1,11 @@
+## 3.0.10
+
+* fix ios save file failed
+
+## 3.0.9
+
+* merged pr https://github.com/fluttercandies/saver_gallery/pull/21
+
 ## 3.0.6
 
 * attempt to repair ITMS-91108
