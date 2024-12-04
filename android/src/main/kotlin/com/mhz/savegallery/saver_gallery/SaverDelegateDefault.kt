@@ -18,6 +18,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import com.mhz.savegallery.saver_gallery.utils.MediaStoreUtils.getMIMEType
+import android.os.Build
 
 /**
  * Implementation of [SaverDelegate] for default saving behavior.
@@ -164,31 +165,47 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
     @SuppressLint("InlinedApi")
     private fun generateFileUri(fileName: String, relativePath: String): Uri {
         val mimeType = getMIMEType(fileName.substringAfterLast('.', ""))
+        val isVideo = mimeType?.startsWith("video")==true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Determine the type of content URI based on MIME type.
+            val contentUri = when {
+                mimeType?.startsWith("video") == true -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                mimeType?.startsWith("audio") == true -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            }
 
-        // Determine the type of content URI based on MIME type.
-        val contentUri = when {
-            mimeType?.startsWith("video") == true -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-            mimeType?.startsWith("audio") == true -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-            else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            // Set a default relative path if it's null or empty.
+            val defaultRelativePath = when {
+                mimeType?.startsWith("video") == true -> Environment.DIRECTORY_MOVIES
+                mimeType?.startsWith("audio") == true -> Environment.DIRECTORY_MUSIC
+                else -> Environment.DIRECTORY_PICTURES
+            }
+
+            val resolvedRelativePath = if (relativePath.isEmpty()) defaultRelativePath else relativePath
+
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, resolvedRelativePath)
+                if (!mimeType.isNullOrEmpty()) put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            }
+
+            return context.contentResolver.insert(contentUri, contentValues)
+                ?: throw IOException("Failed to create Media URI for $fileName")
+        }else{
+            val storePath =
+                Environment.getExternalStoragePublicDirectory(when {
+                    isVideo -> Environment.DIRECTORY_MOVIES
+                    else -> Environment.DIRECTORY_PICTURES
+                }).absolutePath
+            val appDir = File(storePath).apply {
+                if (!exists()) {
+                    mkdir()
+                }
+            }
+            val file =
+                File(appDir, fileName)
+            return Uri.fromFile(file)
         }
-
-        // Set a default relative path if it's null or empty.
-        val defaultRelativePath = when {
-            mimeType?.startsWith("video") == true -> Environment.DIRECTORY_MOVIES
-            mimeType?.startsWith("audio") == true -> Environment.DIRECTORY_MUSIC
-            else -> Environment.DIRECTORY_PICTURES
-        }
-
-        val resolvedRelativePath = if (relativePath.isEmpty()) defaultRelativePath else relativePath
-
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, resolvedRelativePath)
-            if (!mimeType.isNullOrEmpty()) put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-        }
-
-        return context.contentResolver.insert(contentUri, contentValues)
-            ?: throw IOException("Failed to create Media URI for $fileName")
     }
 
     /**
@@ -200,25 +217,43 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
      */
     @SuppressLint("InlinedApi")
     private fun doesFileExist(relativePath: String, fileName: String): Boolean {
-        val contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(MediaStore.Images.Media._ID)
-        val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Images.Media.DISPLAY_NAME} = ?"
-        val selectionArgs = arrayOf("%$relativePath%", fileName)
-        val sortOrder = "${MediaStore.Images.Media.DISPLAY_NAME} ASC"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            val projection = arrayOf(MediaStore.Images.Media._ID)
+            val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Images.Media.DISPLAY_NAME} = ?"
+            val selectionArgs = arrayOf("%$relativePath%", fileName)
+            val sortOrder = "${MediaStore.Images.Media.DISPLAY_NAME} ASC"
 
-        return try {
-            context.contentResolver.query(
-                contentUri,
-                projection,
-                selection,
-                selectionArgs,
-                sortOrder
-            )?.use { cursor ->
-                cursor.count > 0
-            } ?: false
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
+            return try {
+                context.contentResolver.query(
+                    contentUri,
+                    projection,
+                    selection,
+                    selectionArgs,
+                    sortOrder
+                )?.use { cursor ->
+                    cursor.count > 0
+                } ?: false
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        } else {
+            val mimeType = getMIMEType(fileName.substringAfterLast('.', ""))
+            val isVideo = mimeType?.startsWith("video")==true
+            val storePath =
+                Environment.getExternalStoragePublicDirectory(when {
+                    isVideo -> Environment.DIRECTORY_MOVIES
+                    else -> Environment.DIRECTORY_PICTURES
+                }).absolutePath
+            val appDir = File(storePath).apply {
+                if (!exists()) {
+                    mkdir()
+                }
+            }
+            val file =
+                File(appDir, fileName)
+            return file.exists()
         }
     }
 

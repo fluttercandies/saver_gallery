@@ -1,3 +1,6 @@
+## 4.0.1
+
+* fixed the problem that Android 10 and below cannot be saved
 ## 4.0.0
 
 * ohos support
