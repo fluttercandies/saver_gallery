@@ -45,18 +45,6 @@ class SaverGallery {
     String? mimeType = lookupMimeType(fileName, headerBytes: imageBytes);
     extension ??= _extractFileExtension(mimeType, fileName);
 
-    // Handle special case for GIF files on iOS.
-    if ((extension.toLowerCase() == 'gif') && Platform.isIOS) {
-      File tempFile = await _createTempFile('gif', imageBytes);
-      return saveFile(
-        filePath: tempFile.path,
-        fileName: fileName,
-        androidRelativePath:
-            androidRelativePath ?? _getDefaultRelativePathForType(mimeType),
-        skipIfExists: skipIfExists,
-      );
-    }
-
     // Append the file extension if missing.
     if (!fileName.contains('.')) {
       fileName += '.$extension';

@@ -17,13 +17,7 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
       self.result = result
       if call.method == "saveImageToGallery" {
         let arguments = call.arguments as? [String: Any] ?? [String: Any]()
-        guard let imageData = (arguments["image"] as? FlutterStandardTypedData)?.data,
-            let image = UIImage(data: imageData),
-            let quality = arguments["quality"] as? Int,
-            let _ = arguments["fileName"]
-            else { return }
-        let newImage = image.jpegData(compressionQuality: CGFloat(quality / 100))!
-        saveImage(UIImage(data: newImage) ?? image)
+        saveImageToGallery(arguments)
       } else if (call.method == "saveFileToGallery") {
         guard let arguments = call.arguments as? [String: Any],
               let path = arguments["filePath"] as? String
@@ -46,6 +40,45 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
       } else {
         result(FlutterMethodNotImplemented)
       }
+    }
+
+    func saveImageToGallery(_ arguments: [String: Any]) {
+        guard let imageData = (arguments["image"] as? FlutterStandardTypedData)?.data,
+              let quality = arguments["quality"] as? Int,
+              let fileName = arguments["fileName"] as? String
+              else { return }
+
+        let extFromArgs = (arguments["extension"] as? String)?.lowercased()
+        let extFromFileName = URL(fileURLWithPath: fileName).pathExtension.lowercased()
+        let normalizedExt = extFromArgs ?? extFromFileName
+
+        var dataToSave = imageData
+        if ["jpg", "jpeg", "jpe"].contains(normalizedExt), let image = UIImage(data: imageData) {
+            let clampedQuality = max(0, min(quality, 100))
+            let compressionQuality = CGFloat(clampedQuality) / 100.0
+            if let jpegData = image.jpegData(compressionQuality: compressionQuality) {
+                dataToSave = jpegData
+            }
+        }
+
+        var imageIds: [String] = []
+        PHPhotoLibrary.shared().performChanges({
+            let req = PHAssetCreationRequest.forAsset()
+            let options = PHAssetResourceCreationOptions()
+            options.originalFilename = fileName
+            req.addResource(with: .photo, data: dataToSave, options: options)
+            if let imageId = req.placeholderForCreatedAsset?.localIdentifier {
+                imageIds.append(imageId)
+            }
+        }, completionHandler: { [unowned self] (success, error) in
+            DispatchQueue.main.async {
+                if (success && imageIds.count > 0) {
+                    self.saveResult(isSuccess: true)
+                } else {
+                    self.saveResult(isSuccess: false, error: self.errorMessage)
+                }
+            }
+        })
     }
 
     func saveFiles(_ files: [[String: String]]) {
@@ -125,26 +158,6 @@ public class SwiftSaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && videoIds.count > 0) {
-                    self.saveResult(isSuccess: true)
-                } else {
-                    self.saveResult(isSuccess: false, error: self.errorMessage)
-                }
-            }
-        })
-    }
-
-    func saveImage(_ image: UIImage) {
- 
-        var imageIds: [String] = []
-
-        PHPhotoLibrary.shared().performChanges( {
-            let req = PHAssetChangeRequest.creationRequestForAsset(from: image)
-            if let imageId = req.placeholderForCreatedAsset?.localIdentifier {
-                imageIds.append(imageId)
-            }
-        }, completionHandler: { [unowned self] (success, error) in
-            DispatchQueue.main.async {
-                if (success && imageIds.count > 0) {
                     self.saveResult(isSuccess: true)
                 } else {
                     self.saveResult(isSuccess: false, error: self.errorMessage)

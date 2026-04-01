@@ -1,3 +1,9 @@
+## 4.1.1
+
+* Fix iOS `saveImageToGallery()` to preserve the original image format instead of always saving as JPEG
+* Fix iOS JPEG quality handling so compression is only applied to JPEG images
+* Remove the iOS GIF workaround in Dart now that `saveImageToGallery()` handles GIF correctly
+
 ## 4.1.0
 
 * **Feature**: Added batch saving support with `saveImages()` and `saveFiles()` methods across platforms

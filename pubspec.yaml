@@ -1,6 +1,6 @@
 name: saver_gallery
 description: Flutter plugin to save images and videos to gallery on Android, iOS and HarmonyOS.
-version: 4.1.0
+version: 4.1.1
 homepage: https://github.com/fluttercandies/saver_gallery
 repository: https://github.com/fluttercandies/saver_gallery.git
 issue_tracker: https://github.com/fluttercandies/saver_gallery/issues
