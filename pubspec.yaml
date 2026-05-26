@@ -12,8 +12,8 @@ topics:
   - save
 
 environment:
-  sdk: '>=2.12.0 <4.0.0'
-  flutter: ">=1.17.0"
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: ">=3.19.6"
 
 dependencies:
   flutter:

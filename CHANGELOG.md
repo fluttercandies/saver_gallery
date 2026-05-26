@@ -1,3 +1,15 @@
+## Unreleased
+
+* Require Flutter `>=3.19.6` and Dart `>=3.3.0 <4.0.0`
+* Raise Android `minSdkVersion` from 16 to 19
+* Raise iOS podspec platform from 9.0 to 11.0
+* Migrate Android Gradle config to Gradle 8.0.2, AGP 8.1.0, and Kotlin Gradle plugin 1.9.22
+* Add a Gradle wrapper to the Android plugin project so opening `android/` uses Gradle 8.0.2
+* Add direct AndroidX Core and Kotlin coroutines dependencies for the Android plugin
+* Fix Android MediaStore URI creation crash by returning a failed save result instead of crashing (#17)
+* Fix Android 10+ video/audio/image saves by using volume-specific MediaStore URIs (#18)
+* Update example OHOS dependency overrides to GitCode paths and keep `example/ios/Podfile.lock`
+
 ## 4.1.1
 
 * Fix iOS `saveImageToGallery()` to preserve the original image format instead of always saving as JPEG
@@ -66,4 +78,3 @@
 
 * remove ios photo read permission
 * Determine the data type by Uint8List
-

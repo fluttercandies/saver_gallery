@@ -6,7 +6,7 @@ description: Demonstrates how to use the saver_gallery plugin.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
-  sdk: '>=2.19.6 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -33,22 +33,35 @@ dependencies:
 dependency_overrides:
   permission_handler:
     git:
-      url: "https://gitee.com/openharmony-sig/flutter_permission_handler.git"
+      url: "https://gitcode.com/CPF-Flutter/flutter_permission_handler.git"
       path: "permission_handler"
+      ref: "master"
+  permission_handler_ohos:
+    git:
+      url: "https://gitcode.com/CPF-Flutter/flutter_permission_handler.git"
+      path: "permission_handler_ohos"
+      ref: "master"
   fluttertoast:
     git:
-      url: "https://gitee.com/openharmony-sig/flutter_fluttertoast.git"
+      url: "https://gitcode.com/CPF-Flutter/flutter_fluttertoast.git"
       path: "./"
+      ref: "master"
   path_provider:
     git:
-      url: "https://gitee.com/openharmony-sig/flutter_packages.git"
+      url: "https://gitcode.com/openharmony-sig/flutter_packages.git"
       path: "packages/path_provider/path_provider"
+      ref: "br_optimize_har_structure"
+  path_provider_ohos:
+    git:
+      url: "https://gitcode.com/openharmony-sig/flutter_packages.git"
+      path: "packages/path_provider/path_provider_ohos"
       ref: "br_optimize_har_structure"
   device_info_plus:
     git:
-      url: "https://gitee.com/openharmony-sig/flutter_plus_plugins.git"
+      url: "https://gitcode.com/CPF-Flutter/flutter_plus_plugins.git"
       path: "packages/device_info_plus/device_info_plus"
-  dio: ^5.2.1+1
+      ref: "master"
+  dio: ^5.9.2
 
 dev_dependencies:
   flutter_test:

@@ -28,8 +28,17 @@ To include `saver_gallery` in your project, add it as a dependency in your `pubs
 
 ```yaml
 dependencies:
-  saver_gallery: ^4.0.0
+  saver_gallery: ^4.1.1
 ```
+
+---
+
+## Requirements
+
+- Flutter `>=3.19.6`
+- Dart `>=3.3.0 <4.0.0`
+- Android `minSdkVersion 19`
+- iOS `11.0+`
 
 ---
 
@@ -58,11 +67,23 @@ For Android, you need to handle storage permissions to save files to the gallery
 Add the following permissions to your `AndroidManifest.xml` file:
 
 ```xml
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
-<!-- Required if skipIfExists is set to true -->
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission
+    android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    android:maxSdkVersion="28"
+    tools:ignore="ScopedStorage" />
+
+<!-- Required if skipIfExists is set to true on Android 12 and below -->
+<uses-permission
+    android:name="android.permission.READ_EXTERNAL_STORAGE"
+    android:maxSdkVersion="32" />
+
+<!-- Required if skipIfExists is set to true on Android 13+ for the media types you save -->
 <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 ```
+
+If your manifest does not already declare the `tools` namespace, add `xmlns:tools="http://schemas.android.com/tools"` to the root `<manifest>` element.
 
 ### Handling Permissions
 
@@ -73,7 +94,16 @@ import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
-Future<bool> checkAndRequestPermissions({required bool skipIfExists}) async {
+enum MediaType {
+  image,
+  video,
+  audio,
+}
+
+Future<bool> checkAndRequestPermissions({
+  required bool skipIfExists,
+  MediaType mediaType = MediaType.image,
+}) async {
   if (!Platform.isAndroid && !Platform.isIOS) {
     return false; // Only Android and iOS platforms are supported
   }
@@ -82,14 +112,25 @@ Future<bool> checkAndRequestPermissions({required bool skipIfExists}) async {
     final deviceInfo = await DeviceInfoPlugin().androidInfo;
     final sdkInt = deviceInfo.version.sdkInt;
 
-    if (skipIfExists) {
-      // Read permission is required to check if the file already exists
-      return sdkInt >= 33
-          ? await Permission.photos.request().isGranted
-          : await Permission.storage.request().isGranted;
-    } else {
-      // No read permission required for Android SDK 29 and above
-      return sdkInt >= 29 ? true : await Permission.storage.request().isGranted;
+    if (sdkInt < 29) {
+      return await Permission.storage.request().isGranted;
+    }
+
+    if (!skipIfExists) {
+      return true;
+    }
+
+    if (sdkInt < 33) {
+      return await Permission.storage.request().isGranted;
+    }
+
+    switch (mediaType) {
+      case MediaType.image:
+        return await Permission.photos.request().isGranted;
+      case MediaType.video:
+        return await Permission.videos.request().isGranted;
+      case MediaType.audio:
+        return await Permission.audio.request().isGranted;
     }
   } else if (Platform.isIOS) {
     // iOS permission for saving images to the gallery
@@ -106,7 +147,7 @@ Future<bool> checkAndRequestPermissions({required bool skipIfExists}) async {
 
 - **For Android:**
   - **SDK 29+**: Does not require read permission for writing files.
-  - **SDK 33+**: Requires `Permission.photos` to check if a file exists.
+  - **SDK 33+**: Requires `Permission.photos`, `Permission.videos`, or `Permission.audio` to check if a file exists.
   - **SDK < 29**: Requires `Permission.storage` for read and write operations.
 
 - **For iOS:**
@@ -137,7 +178,7 @@ _saveGif() async {
   final result = await SaverGallery.saveImage(
     Uint8List.fromList(response.data),
     quality: 60,
-    name: imageName,
+    fileName: imageName,
     androidRelativePath: "Pictures/appName/images",
     skipIfExists: false,
   );
@@ -150,7 +191,7 @@ _saveGif() async {
 **Explanation:**
 
 - `quality`: Set the image quality (0-100) for compressing images. This only applies to `jpg` format.
-- `name`: The name of the file being saved.
+- `fileName`: The name of the file being saved.
 - `androidRelativePath`: Relative path in the Android gallery, e.g., `"Pictures/appName/images"`.
 - `skipIfExists`: If `true`, skips saving the image if it already exists in the specified path.
 
@@ -175,9 +216,9 @@ _saveVideo() async {
   );
 
   final result = await SaverGallery.saveFile(
-    file: videoPath,
+    filePath: videoPath,
     skipIfExists: true,
-    name: 'sample_video.mp4',
+    fileName: 'sample_video.mp4',
     androidRelativePath: "Movies",
   );
 
@@ -187,9 +228,9 @@ _saveVideo() async {
 
 **Explanation:**
 
-- `file`: Path to the file being saved.
+- `filePath`: Path to the file being saved.
 - `skipIfExists`: If `true`, skips saving the file if it already exists.
-- `name`: Desired name of the file in the gallery.
+- `fileName`: Desired name of the file in the gallery.
 - `androidRelativePath`: Relative path in the Android gallery, e.g., `"Movies"`.
 
 ---
