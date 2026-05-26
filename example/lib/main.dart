@@ -79,9 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final deviceInfoPlugin = DeviceInfoPlugin();
       final deviceInfo = await deviceInfoPlugin.androidInfo;
       final sdkInt = deviceInfo.version.sdkInt;
-      statuses = sdkInt < 29
-          ? await Permission.storage.request().isGranted
-          : true;
+      statuses = sdkInt < 29 ? await Permission.storage.request().isGranted : true;
     } else {
       statuses = await Permission.photosAddOnly.request().isGranted;
     }
@@ -91,13 +89,9 @@ class _MyHomePageState extends State<MyHomePage> {
   /// Captures the current screen and saves it as an image in the gallery.
   Future<void> _saveScreen() async {
     try {
-      RenderRepaintBoundary boundary =
-          _globalKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
+      RenderRepaintBoundary boundary = _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       ui.Image image = await boundary.toImage();
-      ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData != null) {
         String picturesPath = "${DateTime.now().millisecondsSinceEpoch}.jpg";
         final result = await SaverGallery.saveImage(
@@ -140,11 +134,11 @@ class _MyHomePageState extends State<MyHomePage> {
         "https://test-1300597023.cos.ap-singapore.myqcloud.com/hyj-doc-flutter-demo-run%20%281%29.gif",
         options: Options(responseType: ResponseType.bytes),
       );
-      String gifPath = "network_gif.gif";
+      String gifPath = "test_image.gif";
       final result = await SaverGallery.saveImage(
         Uint8List.fromList(response.data),
         fileName: gifPath,
-        androidRelativePath: "Pictures/Gifs",
+        androidRelativePath: "Pictures/appName/images",
         skipIfExists: false,
       );
       _showMessage(result.toString());
@@ -157,18 +151,13 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _saveVideo() async {
     try {
       final dir = await getTemporaryDirectory();
-      String savePath =
-          "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.mp4";
-      String fileUrl =
-          "https://test-1300597023.cos.ap-singapore.myqcloud.com/ForBiggerBlazes.mp4";
+      String savePath = "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.mp4";
+      String fileUrl = "https://test-1300597023.cos.ap-singapore.myqcloud.com/ForBiggerBlazes.mp4";
 
       await Dio().download(
         fileUrl,
         savePath,
-        options: Options(
-          sendTimeout: Duration(minutes: 10),
-          receiveTimeout: Duration(minutes: 10),
-        ),
+        options: Options(sendTimeout: Duration(minutes: 10), receiveTimeout: Duration(minutes: 10)),
         onReceiveProgress: (count, total) {
           debugPrint("${(count / total * 100).toStringAsFixed(0)}%");
         },
@@ -193,17 +182,29 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger != null) {
+      _showSnackBar(messenger, info);
+      return;
+    }
 
-      final messenger = ScaffoldMessenger.of(context);
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(info), behavior: SnackBarBehavior.floating),
-        );
-    });
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+
+        final nextMessenger = ScaffoldMessenger.maybeOf(context);
+        if (nextMessenger != null) {
+          _showSnackBar(nextMessenger, info);
+        }
+      })
+      ..ensureVisualUpdate();
+  }
+
+  void _showSnackBar(ScaffoldMessengerState messenger, String info) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(info), behavior: SnackBarBehavior.floating));
   }
 }

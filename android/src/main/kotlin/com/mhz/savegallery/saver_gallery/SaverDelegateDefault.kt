@@ -155,7 +155,7 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
                 }
                 notifyGallery(fileUri)
                 SaveResultModel(fileUri.toString().isNotEmpty(), null).toHashMap()
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 SaveResultModel(false, "Failed to save image: ${e.message}").toHashMap()
             }
@@ -194,7 +194,7 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
                 }
                 notifyGallery(fileUri)
                 SaveResultModel(fileUri.toString().isNotEmpty(), null).toHashMap()
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 SaveResultModel(false, "Failed to save file: ${e.message}").toHashMap()
             }
@@ -212,7 +212,6 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
     @SuppressLint("InlinedApi")
     private fun generateFileUri(fileName: String, relativePath: String): Uri {
         val mimeType = getMIMEType(fileName.substringAfterLast('.', ""))
-        val isVideo = mimeType?.startsWith("video")==true
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // Determine the type of content URI based on MIME type.
             val contentUri = when {
@@ -238,20 +237,9 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
 
             return context.contentResolver.insert(contentUri, contentValues)
                 ?: throw IOException("Failed to create Media URI for $fileName")
-        }else{
-            val storePath =
-                Environment.getExternalStoragePublicDirectory(when {
-                    isVideo -> Environment.DIRECTORY_MOVIES
-                    else -> Environment.DIRECTORY_PICTURES
-                }).absolutePath
-            val appDir = File(storePath).apply {
-                if (!exists()) {
-                    mkdir()
-                }
-            }
-            val file =
-                File(appDir, fileName)
-            return Uri.fromFile(file)
+        } else {
+            val targetDirectory = resolveLegacyTargetDirectory(relativePath, mimeType)
+            return Uri.fromFile(File(targetDirectory, fileName))
         }
     }
 
@@ -286,22 +274,30 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
                 false
             }
         } else {
-            val mimeType = getMIMEType(fileName.substringAfterLast('.', ""))
-            val isVideo = mimeType?.startsWith("video")==true
-            val storePath =
-                Environment.getExternalStoragePublicDirectory(when {
-                    isVideo -> Environment.DIRECTORY_MOVIES
-                    else -> Environment.DIRECTORY_PICTURES
-                }).absolutePath
-            val appDir = File(storePath).apply {
-                if (!exists()) {
-                    mkdir()
-                }
+            return try {
+                val mimeType = getMIMEType(fileName.substringAfterLast('.', ""))
+                val targetDirectory = resolveLegacyTargetDirectory(relativePath, mimeType)
+                File(targetDirectory, fileName).exists()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
-            val file =
-                File(appDir, fileName)
-            return file.exists()
         }
+    }
+
+    private fun resolveLegacyTargetDirectory(relativePath: String, mimeType: String?): File {
+        val resolvedPath = LegacyRelativePathResolver.resolve(relativePath, mimeType)
+        val publicDirectory = Environment.getExternalStoragePublicDirectory(resolvedPath.publicDirectory)
+        val targetDirectory = resolvedPath.childPath?.let { File(publicDirectory, it) } ?: publicDirectory
+
+        if (!targetDirectory.exists() && !targetDirectory.mkdirs()) {
+            throw IOException("Failed to create directory ${targetDirectory.absolutePath}")
+        }
+        if (!targetDirectory.isDirectory) {
+            throw IOException("Path is not a directory: ${targetDirectory.absolutePath}")
+        }
+
+        return targetDirectory
     }
 
     /**
