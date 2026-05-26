@@ -1,3 +1,7 @@
+## 5.0.0
+
+* add spm support
+
 ## 4.1.2
 
 * Require Flutter `>=3.19.6` and Dart `>=3.3.0 <4.0.0`
