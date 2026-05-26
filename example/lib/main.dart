@@ -6,7 +6,6 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
@@ -19,9 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Save Image to Gallery',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       home: MyHomePage(),
     );
   }
@@ -46,20 +43,14 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Save Image to Gallery"),
-      ),
+      appBar: AppBar(title: Text("Save Image to Gallery")),
       body: Center(
         child: Column(
           children: <Widget>[
             // Widget to capture and save as an image.
             RepaintBoundary(
               key: _globalKey,
-              child: Container(
-                width: 200,
-                height: 200,
-                color: Colors.red,
-              ),
+              child: Container(width: 200, height: 200, color: Colors.red),
             ),
             _buildButton("Save Local Image", _saveScreen),
             _buildButton("Save Network Image", _getHttp),
@@ -75,10 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildButton(String text, VoidCallback onPressed) {
     return Container(
       padding: EdgeInsets.only(top: 15),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        child: Text(text),
-      ),
+      child: ElevatedButton(onPressed: onPressed, child: Text(text)),
       width: 200,
       height: 44,
     );
@@ -91,20 +79,25 @@ class _MyHomePageState extends State<MyHomePage> {
       final deviceInfoPlugin = DeviceInfoPlugin();
       final deviceInfo = await deviceInfoPlugin.androidInfo;
       final sdkInt = deviceInfo.version.sdkInt;
-      statuses = sdkInt < 29 ? await Permission.storage.request().isGranted : true;
+      statuses = sdkInt < 29
+          ? await Permission.storage.request().isGranted
+          : true;
     } else {
       statuses = await Permission.photosAddOnly.request().isGranted;
     }
-    _toastInfo('Permission Request Result: $statuses');
+    _showMessage('Permission Request Result: $statuses');
   }
 
   /// Captures the current screen and saves it as an image in the gallery.
   Future<void> _saveScreen() async {
     try {
       RenderRepaintBoundary boundary =
-      _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+          _globalKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
       ui.Image image = await boundary.toImage();
-      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       if (byteData != null) {
         String picturesPath = "${DateTime.now().millisecondsSinceEpoch}.jpg";
         final result = await SaverGallery.saveImage(
@@ -112,10 +105,10 @@ class _MyHomePageState extends State<MyHomePage> {
           fileName: picturesPath,
           skipIfExists: false,
         );
-        _toastInfo(result.toString());
+        _showMessage(result.toString());
       }
     } catch (e) {
-      _toastInfo('Error: $e');
+      _showMessage('Error: $e');
     }
   }
 
@@ -134,9 +127,9 @@ class _MyHomePageState extends State<MyHomePage> {
         androidRelativePath: "Pictures/NetworkImages",
         skipIfExists: true,
       );
-      _toastInfo(result.toString());
+      _showMessage(result.toString());
     } catch (e) {
-      _toastInfo('Error: $e');
+      _showMessage('Error: $e');
     }
   }
 
@@ -154,9 +147,9 @@ class _MyHomePageState extends State<MyHomePage> {
         androidRelativePath: "Pictures/Gifs",
         skipIfExists: false,
       );
-      _toastInfo(result.toString());
+      _showMessage(result.toString());
     } catch (e) {
-      _toastInfo('Error: $e');
+      _showMessage('Error: $e');
     }
   }
 
@@ -164,8 +157,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _saveVideo() async {
     try {
       final dir = await getTemporaryDirectory();
-      String savePath = "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.mp4";
-      String fileUrl = "https://test-1300597023.cos.ap-singapore.myqcloud.com/ForBiggerBlazes.mp4";
+      String savePath =
+          "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.mp4";
+      String fileUrl =
+          "https://test-1300597023.cos.ap-singapore.myqcloud.com/ForBiggerBlazes.mp4";
 
       await Dio().download(
         fileUrl,
@@ -185,15 +180,30 @@ class _MyHomePageState extends State<MyHomePage> {
         androidRelativePath: "Movies",
         skipIfExists: true,
       );
-      _toastInfo(result.toString());
+      _showMessage(result.toString());
     } catch (e) {
-      _toastInfo('Error: $e');
+      _showMessage('Error: $e');
     }
   }
 
-  /// Displays a toast message with the given information.
-  void _toastInfo(String info) {
-    print(info);
-    Fluttertoast.showToast(msg: info, toastLength: Toast.LENGTH_LONG);
+  /// Displays a message with the given information.
+  void _showMessage(String info) {
+    debugPrint(info);
+    if (!mounted) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(info), behavior: SnackBarBehavior.floating),
+        );
+    });
   }
 }

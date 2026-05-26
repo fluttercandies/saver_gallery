@@ -17,9 +17,7 @@ package com.mhz.savegallery.saver_gallery.utils
  */
 
 import android.net.Uri
-import android.os.Parcelable
 import android.provider.MediaStore.Files.FileColumns
-import kotlinx.parcelize.Parcelize
 
 /**
  * Represents a File entry.
@@ -30,7 +28,6 @@ import kotlinx.parcelize.Parcelize
  * @property type Entry file type.
  * @property mimeType Mime type of the file.
  */
-@Parcelize
 data class FileResource(
     val uri: Uri,
     val fileName: String,
@@ -38,7 +35,7 @@ data class FileResource(
     val type: FileType,
     val mimeType: String,
     val path: String?,
-) : Parcelable
+)
 
 /**
  *  Media type enum class representing the [FileColumns.MEDIA_TYPE] column

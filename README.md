@@ -28,17 +28,23 @@ To include `saver_gallery` in your project, add it as a dependency in your `pubs
 
 ```yaml
 dependencies:
-  saver_gallery: ^4.1.1
+  saver_gallery: ^5.0.0
 ```
 
 ---
 
 ## Requirements
 
-- Flutter `>=3.19.6`
-- Dart `>=3.3.0 <4.0.0`
+- Flutter `>=3.44.0`
+- Dart `>=3.12.0 <4.0.0`
+- JDK 17 for Android builds
+- Android `compileSdkVersion 36`
 - Android `minSdkVersion 19`
-- iOS `11.0+`
+- iOS `13.0+`
+
+Version `5.0.0` and later require Flutter `3.41.0+`. If your project still uses an older Flutter SDK, use `saver_gallery` `4.1.2`.
+
+The iOS implementation supports Swift Package Manager on Flutter `3.44.0+` while keeping CocoaPods support.
 
 ---
 

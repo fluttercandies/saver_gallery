@@ -37,6 +37,6 @@ Icon?
 /Flutter/ephemeral/
 /Flutter/flutter_export_environment.sh
 
-# SPM
+# Swift Package Manager
 .build/
 .swiftpm/
