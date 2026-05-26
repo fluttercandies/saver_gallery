@@ -41,7 +41,10 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
             }
 
             // Create a URI to save the image in the gallery.
-            val uri = createMediaUri(extension, fileName, relativePath)
+            val uri = createMediaUri(extension, fileName, relativePath) ?: run {
+                result.success(SaveResultModel(false, "Couldn't create the image URI").toHashMap())
+                return@launch
+            }
             val isSuccess = saveImage(image, quality, extension, uri)
 
             // Scan and make the saved image visible in the gallery.
@@ -74,7 +77,10 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
             }
 
             // Create a URI to save the file in the gallery.
-            val uri = createMediaUri(extension, fileName, relativePath)
+            val uri = createMediaUri(extension, fileName, relativePath) ?: run {
+                result.success(SaveResultModel(false, "Couldn't create the file URI").toHashMap())
+                return@launch
+            }
             val isSuccess = saveFile(file, uri)
 
             // Scan and make the saved file visible in the gallery.
@@ -117,6 +123,11 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
 
                     // Create a URI to save the file in the gallery.
                     val uri = createMediaUri(extension, fileName, relativePath)
+                    if (uri == null) {
+                        failureCount++
+                        errors.add("$fileName: Failed to create file URI")
+                        continue
+                    }
                     val isSuccess = saveFile(file, uri)
 
                     if (isSuccess) {
@@ -192,14 +203,20 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
 
     // Creates a URI for media content with the given parameters.
     @SuppressLint("InlinedApi")
-    private fun createMediaUri(extension: String, fileName: String, relativePath: String?): Uri {
+    private fun createMediaUri(extension: String, fileName: String, relativePath: String?): Uri? {
         val mimeType = getMIMEType(extension)
 
         // Determine the type of content URI based on MIME type.
         val contentUri = when {
-            mimeType?.startsWith("video") == true -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-            mimeType?.startsWith("audio") == true -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-            else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            mimeType?.startsWith("video") == true -> {
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            }
+            mimeType?.startsWith("audio") == true -> {
+                MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            }
+            else -> {
+                MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            }
         }
 
         // Set a default relative path if it's null or empty.
@@ -214,11 +231,15 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
             put(MediaStore.MediaColumns.RELATIVE_PATH, resolvedRelativePath)
-            if (!mimeType.isNullOrEmpty()) put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+            if (!mimeType.isNullOrEmpty()) put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
         }
 
-        return context.contentResolver.insert(contentUri, contentValues)
-            ?: throw IOException("Failed to create Media URI for $fileName")
+        return try {
+            context.contentResolver.insert(contentUri, contentValues)
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
+            null
+        }
     }
 
     // Checks if a file with the given name already exists in the specified relative path.
