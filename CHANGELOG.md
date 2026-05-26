@@ -3,7 +3,8 @@
 * Require Flutter `>=3.19.6` and Dart `>=3.3.0 <4.0.0`
 * Raise Android `minSdkVersion` from 16 to 19
 * Raise iOS podspec platform from 9.0 to 11.0
-* Migrate the example Android project to the Flutter Gradle Plugin DSL with Gradle 7.6.3 and AGP 7.4.2
+* Migrate Android Gradle config to Gradle 8.0.2, AGP 8.1.0, and Kotlin Gradle plugin 1.9.22
+* Add a Gradle wrapper to the Android plugin project so opening `android/` uses Gradle 8.0.2
 * Update example OHOS dependency overrides to GitCode paths and keep `example/ios/Podfile.lock`
 
 ## 4.1.1
