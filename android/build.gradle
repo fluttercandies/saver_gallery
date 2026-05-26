@@ -26,6 +26,10 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-parcelize'
 
 android {
+    if (project.android.hasProperty('namespace')) {
+        namespace 'com.mhz.savegallery.saver_gallery'
+    }
+
     compileSdkVersion 34
 
     compileOptions {
@@ -42,10 +46,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 16
-        if (project.android.hasProperty('namespace')) {
-            namespace 'com.mhz.savegallery.saver_gallery'
-        }
+        minSdkVersion 19
     }
 }
 

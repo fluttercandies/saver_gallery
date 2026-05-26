@@ -1,3 +1,11 @@
+## Unreleased
+
+* Require Flutter `>=3.19.6` and Dart `>=3.3.0 <4.0.0`
+* Raise Android `minSdkVersion` from 16 to 19
+* Raise iOS podspec platform from 9.0 to 11.0
+* Migrate the example Android project to the Flutter Gradle Plugin DSL with Gradle 7.6.3 and AGP 7.4.2
+* Update example OHOS dependency overrides to GitCode paths and keep `example/ios/Podfile.lock`
+
 ## 4.1.1
 
 * Fix iOS `saveImageToGallery()` to preserve the original image format instead of always saving as JPEG
@@ -66,4 +74,3 @@
 
 * remove ios photo read permission
 * Determine the data type by Uint8List
-

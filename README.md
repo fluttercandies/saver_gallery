@@ -28,8 +28,17 @@ To include `saver_gallery` in your project, add it as a dependency in your `pubs
 
 ```yaml
 dependencies:
-  saver_gallery: ^4.0.0
+  saver_gallery: ^4.1.1
 ```
+
+---
+
+## Requirements
+
+- Flutter `>=3.19.6`
+- Dart `>=3.3.0 <4.0.0`
+- Android `minSdkVersion 19`
+- iOS `11.0+`
 
 ---
 
