@@ -13,7 +13,7 @@ A new Flutter project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'saver_gallery/Sources/saver_gallery/**/*.swift'  
+  s.source_files = 'saver_gallery/Sources/saver_gallery/**/*.swift'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
   s.resource_bundles = {'saver_gallery' => ['saver_gallery/Sources/saver_gallery/PrivacyInfo.xcprivacy']}

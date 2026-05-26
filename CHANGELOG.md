@@ -1,3 +1,15 @@
+## Unreleased
+
+* Require Flutter `>=3.44.0` and Dart `>=3.12.0 <4.0.0`.
+* Add Swift Package Manager support for iOS while keeping CocoaPods support (#33, #34).
+* Raise Android `compileSdkVersion` to 36.
+* Migrate Android Gradle config to Gradle 9.1.0, AGP 9.0.1, and Kotlin Gradle plugin 2.3.20.
+* Migrate Android app and plugin Gradle config to AGP 9 Built-in Kotlin.
+* Fix Android Java 8 obsolete source/target warnings by setting Android Java/Kotlin targets to 17 (#31).
+* Raise iOS platform from 11.0 to 13.0.
+* Remove the example app's `fluttertoast` dependency and use Flutter `SnackBar` messages instead.
+* Update example dependency overrides needed for Flutter 3.44 and Dart 3.12 compatibility.
+
 ## 5.0.0
 
 * add spm support

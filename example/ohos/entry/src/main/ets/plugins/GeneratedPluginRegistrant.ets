@@ -1,6 +1,5 @@
 import { FlutterEngine, Log } from '@ohos/flutter_ohos';
 import DeviceInfoPlusOhosPlugin from 'device_info_plus';
-import FluttertoastPlugin from 'fluttertoast';
 import PathProviderPlugin from 'path_provider_ohos';
 import PermissionHandlerPlugin from 'permission_handler_ohos';
 import SaverGalleryPlugin from 'saver_gallery';
@@ -18,7 +17,6 @@ export class GeneratedPluginRegistrant {
   static registerWith(flutterEngine: FlutterEngine) {
     try {
       flutterEngine.getPlugins()?.add(new DeviceInfoPlusOhosPlugin());
-      flutterEngine.getPlugins()?.add(new FluttertoastPlugin());
       flutterEngine.getPlugins()?.add(new PathProviderPlugin());
       flutterEngine.getPlugins()?.add(new PermissionHandlerPlugin());
       flutterEngine.getPlugins()?.add(new SaverGalleryPlugin());
