@@ -1,5 +1,5 @@
-## Unreleased
 
+## 5.0.2
 * Require Flutter `>=3.44.0` and Dart `>=3.12.0 <4.0.0`.
 * Add Swift Package Manager support for iOS while keeping CocoaPods support (#33, #34).
 * Raise Android `compileSdkVersion` to 36.
@@ -10,14 +10,8 @@
 * Raise iOS platform from 11.0 to 13.0.
 * Remove the example app's `fluttertoast` dependency and use Flutter `SnackBar` messages instead.
 * Update example dependency overrides needed for Flutter 3.44 and Dart 3.12 compatibility.
-
-## 5.0.1
-
 * fix: support androidRelativePath on Android 9 and below
 
-## 5.0.0
-
-* add spm support
 
 ## 4.1.2
 
