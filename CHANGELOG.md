@@ -1,3 +1,6 @@
+## Unreleased
+
+* Fix iOS parallel save requests overwriting pending results (#30).
 
 ## 5.0.2
 * Require Flutter `>=3.44.0` and Dart `>=3.12.0 <4.0.0`.
