@@ -6,12 +6,12 @@ class SaveImageData {
   final Uint8List bytes;
   final String fileName;
   final String? extension;
-  final String? androidRelativePath;
+  final String? albumPath;
 
   SaveImageData({
     required this.bytes,
     required this.fileName,
-    this.androidRelativePath,
+    this.albumPath,
     this.extension,
   });
 }
@@ -20,23 +20,16 @@ class SaveImageData {
 class SaveFileData {
   final String filePath;
   final String fileName;
-  final String? androidRelativePath;
+  final String? albumPath;
 
-  SaveFileData({
-    required this.filePath,
-    required this.fileName,
-    this.androidRelativePath,
-  });
+  SaveFileData({required this.filePath, required this.fileName, this.albumPath});
 
   /// Creates a [SaveFileData] instance from a [File] object.
-  factory SaveFileData.fromFile(
-    File file, {
-    String? androidRelativePath,
-  }) {
+  factory SaveFileData.fromFile(File file, {String? albumPath}) {
     return SaveFileData(
       filePath: file.path,
       fileName: file.uri.pathSegments.last,
-      androidRelativePath: androidRelativePath,
+      albumPath: albumPath,
     );
   }
 }

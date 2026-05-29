@@ -16,6 +16,7 @@ The `saver_gallery` plugin enables you to save images and other media files (suc
 
 - Save images of various formats (`png`, `jpg`, `gif`, etc.) to the gallery.
 - Save video and other media files to the gallery.
+- Save media into named albums on Android and iOS.
 - **Batch save multiple images or files at once.**
 - Handle conditional saving with the `skipIfExists` parameter.
 - Compatible with Android, iOS, and HarmonyOS platforms.
@@ -185,7 +186,7 @@ _saveGif() async {
     Uint8List.fromList(response.data),
     quality: 60,
     fileName: imageName,
-    androidRelativePath: "Pictures/appName/images",
+    albumPath: "appName/images",
     skipIfExists: false,
   );
 
@@ -197,9 +198,41 @@ _saveGif() async {
 **Explanation:**
 
 - `quality`: Set the image quality (0-100) for compressing images. This only applies to `jpg` format.
-- `fileName`: The name of the file being saved.
-- `androidRelativePath`: Relative path in the Android gallery, e.g., `"Pictures/appName/images"`.
+- `fileName`: The name of the file being saved. This should be a file name, not an album path.
+- `albumPath`: Album hierarchy path for Android and iOS, e.g. `"appName/images"` saves images to `"Pictures/appName/images"` on Android and `appName > images` in iOS Photos.
 - `skipIfExists`: If `true`, skips saving the image if it already exists in the specified path.
+
+---
+
+### Saving to an Album
+
+Use `albumPath` when you want Android and iOS to save into a named album:
+
+```dart
+final result = await SaverGallery.saveImage(
+  imageBytes,
+  fileName: 'album_image.jpg',
+  albumPath: 'MyAlbum',
+  skipIfExists: false,
+);
+```
+
+On iOS, `albumPath` creates or reuses a PhotoKit user album. On Android, it maps to the default media directory for the file type, such as `"Pictures/MyAlbum"` for images or `"Movies/MyAlbum"` for videos.
+
+Use nested `albumPath` when you need folder-like organization:
+
+```dart
+final result = await SaverGallery.saveImage(
+  imageBytes,
+  fileName: 'album_image.jpg',
+  albumPath: 'appName/images',
+  skipIfExists: false,
+);
+```
+
+This saves to `Pictures/appName/images` on Android and `appName > images` in iOS Photos. The last segment is the iOS album; parent segments are iOS folders.
+
+Android public-directory prefixes are also accepted for migration compatibility, for example `albumPath: 'Pictures/appName/images'`. `albumPath` must be a relative album hierarchy path, not an absolute filesystem path.
 
 ---
 
@@ -225,7 +258,7 @@ _saveVideo() async {
     filePath: videoPath,
     skipIfExists: true,
     fileName: 'sample_video.mp4',
-    androidRelativePath: "Movies",
+    albumPath: "appName/videos",
   );
 
   print(result);
@@ -237,7 +270,7 @@ _saveVideo() async {
 - `filePath`: Path to the file being saved.
 - `skipIfExists`: If `true`, skips saving the file if it already exists.
 - `fileName`: Desired name of the file in the gallery.
-- `androidRelativePath`: Relative path in the Android gallery, e.g., `"Movies"`.
+- `albumPath`: Album hierarchy path for Android and iOS. For videos, `"appName/videos"` saves to `"Movies/appName/videos"` on Android and `appName > videos` in iOS Photos.
 
 ---
 
@@ -251,8 +284,8 @@ import 'package:saver_gallery/saver_gallery.dart';
 // Batch save images
 _saveBatchImages() async {
   final images = [
-    SaveImageData(bytes: imageBytes1, fileName: 'image1.jpg'),
-    SaveImageData(bytes: imageBytes2, fileName: 'image2.png'),
+    SaveImageData(bytes: imageBytes1, fileName: 'image1.jpg', albumPath: 'MyAlbum'),
+    SaveImageData(bytes: imageBytes2, fileName: 'image2.png', albumPath: 'MyAlbum'),
   ];
   
   final result = await SaverGallery.saveImages(images, skipIfExists: false);
@@ -262,8 +295,8 @@ _saveBatchImages() async {
 // Batch save files
 _saveBatchFiles() async {
   final files = [
-    SaveFileData(filePath: '/path/to/file1.mp4', fileName: 'video1.mp4'),
-    SaveFileData(filePath: '/path/to/file2.mp4', fileName: 'video2.mp4'),
+    SaveFileData(filePath: '/path/to/file1.mp4', fileName: 'video1.mp4', albumPath: 'MyAlbum'),
+    SaveFileData(filePath: '/path/to/file2.mp4', fileName: 'video2.mp4', albumPath: 'MyAlbum'),
   ];
   
   final result = await SaverGallery.saveFiles(files, skipIfExists: false);
