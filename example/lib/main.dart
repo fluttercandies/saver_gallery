@@ -55,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
             _buildButton("Save Local Image", _saveScreen),
             _buildButton("Save Network Image", _getHttp),
             _buildButton("Save Network Video", _saveVideo),
-            _buildButton("Save Gif to Gallery", _saveGif),
+            _buildButton("Save Gif to Album", _saveGif),
             _buildButton("Save Two Gifs", _saveTwoGifs),
           ],
         ),
@@ -119,7 +119,7 @@ class _MyHomePageState extends State<MyHomePage> {
         Uint8List.fromList(response.data),
         quality: 60,
         fileName: picturesPath,
-        androidRelativePath: "Pictures/NetworkImages",
+        albumPath: "NetworkImages",
         skipIfExists: true,
       );
       _showMessage(result.toString());
@@ -128,18 +128,17 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  /// Downloads a GIF from the network and saves it to the gallery.
+  /// Downloads a GIF from the network and saves it to a named album.
   Future<void> _saveGif() async {
     try {
       final response = await Dio().get(
         "https://test-1300597023.cos.ap-singapore.myqcloud.com/hyj-doc-flutter-demo-run%20%281%29.gif",
         options: Options(responseType: ResponseType.bytes),
       );
-      String gifPath = "test_image.gif";
       final result = await SaverGallery.saveImage(
         Uint8List.fromList(response.data),
-        fileName: gifPath,
-        androidRelativePath: "Pictures/appName/images",
+        fileName: "album_image.gif",
+        albumPath: "appName/images",
         skipIfExists: false,
       );
       _showMessage(result.toString());
@@ -157,16 +156,8 @@ class _MyHomePageState extends State<MyHomePage> {
       final bytes = Uint8List.fromList(response.data);
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final results = await Future.wait([
-        SaverGallery.saveImage(
-          bytes,
-          fileName: "parallel_${timestamp}_1.gif",
-          skipIfExists: false,
-        ),
-        SaverGallery.saveImage(
-          bytes,
-          fileName: "parallel_${timestamp}_2.gif",
-          skipIfExists: false,
-        ),
+        SaverGallery.saveImage(bytes, fileName: "parallel_${timestamp}_1.gif", skipIfExists: false),
+        SaverGallery.saveImage(bytes, fileName: "parallel_${timestamp}_2.gif", skipIfExists: false),
       ]);
 
       _showMessage(results.toString());
@@ -194,7 +185,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final result = await SaverGallery.saveFile(
         filePath: savePath,
         fileName: 'downloaded_video.mp4',
-        androidRelativePath: "Movies",
+        albumPath: "appName/videos",
         skipIfExists: true,
       );
       _showMessage(result.toString());

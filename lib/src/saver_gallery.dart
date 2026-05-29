@@ -11,9 +11,9 @@ import './model.dart';
 
 /// A utility class for saving images and files to the device's media gallery.
 class SaverGallery {
-  static const MethodChannel _channel =
-      MethodChannel('com.fluttercandies/saver_gallery');
+  static const MethodChannel _channel = MethodChannel('com.fluttercandies/saver_gallery');
   static final Uuid _uuidGenerator = Uuid();
+
   static Future<Directory> get _cacheDirectory async {
     final tempDir = await getTemporaryDirectory();
     final cacheDir = Directory('${tempDir.path}/saver_gallery');
@@ -29,7 +29,7 @@ class SaverGallery {
   /// [quality] specifies the quality of the image (for JPG files).
   /// [extension] is optional; if not provided, it will be inferred from the file name.
   /// [fileName] is the name of the file to save.
-  /// [androidRelativePath] is the folder path for Android devices. Defaults to the appropriate type-based path.
+  /// [albumPath] is the album hierarchy path for Android and iOS.
   /// [skipIfExists] if true, skips saving if the file already exists.
   ///
   /// Returns a [SaveResult] indicating success or failure.
@@ -38,9 +38,14 @@ class SaverGallery {
     int quality = 100,
     String? extension,
     required String fileName,
-    String? androidRelativePath,
+    String? albumPath,
     required bool skipIfExists,
   }) async {
+    final normalizedAlbumPath = _normalizeAlbumPath(albumPath);
+    if (normalizedAlbumPath.errorMessage != null) {
+      return SaveResult(false, normalizedAlbumPath.errorMessage);
+    }
+
     // Determine the MIME type and file extension.
     String? mimeType = lookupMimeType(fileName, headerBytes: imageBytes);
     extension ??= _extractFileExtension(mimeType, fileName);
@@ -52,18 +57,18 @@ class SaverGallery {
 
     try {
       // Call the native method to save the image to the gallery.
-      final result = await _channel.invokeMapMethod<String, dynamic>(
-        'saveImageToGallery',
-        <String, dynamic>{
-          'image': imageBytes,
-          'quality': quality,
-          'fileName': fileName,
-          'extension': extension,
-          'relativePath':
-              androidRelativePath ?? _getDefaultRelativePathForType(mimeType),
-          'skipIfExists': skipIfExists,
-        },
-      );
+      final result = await _channel.invokeMapMethod<String, dynamic>('saveImageToGallery', <String, dynamic>{
+        'image': imageBytes,
+        'quality': quality,
+        'fileName': fileName,
+        'extension': extension,
+        'relativePath': _resolveRelativePath(
+          albumPath: normalizedAlbumPath.value,
+          mimeType: mimeType,
+        ),
+        'albumPath': normalizedAlbumPath.value,
+        'skipIfExists': skipIfExists,
+      });
 
       return SaveResult.fromMap(result!);
     } catch (e) {
@@ -76,31 +81,36 @@ class SaverGallery {
   ///
   /// [filePath] is the path of the file to be saved.
   /// [fileName] is the name of the file to save in the gallery.
-  /// [androidRelativePath] is the folder path for Android devices. Defaults to the appropriate type-based path.
+  /// [albumPath] is the album hierarchy path for Android and iOS.
   /// [skipIfExists] if true, skips saving if the file already exists.
   ///
   /// Returns a [SaveResult] indicating success or failure.
   static Future<SaveResult> saveFile({
     required String filePath,
     required String fileName,
-    String? androidRelativePath,
+    String? albumPath,
     required bool skipIfExists,
   }) async {
+    final normalizedAlbumPath = _normalizeAlbumPath(albumPath);
+    if (normalizedAlbumPath.errorMessage != null) {
+      return SaveResult(false, normalizedAlbumPath.errorMessage);
+    }
+
     // Determine the MIME type based on the file path.
     String? mimeType = lookupMimeType(filePath);
 
     try {
       // Call the native method to save the file to the gallery.
-      final result = await _channel.invokeMapMethod<String, dynamic>(
-        'saveFileToGallery',
-        <String, dynamic>{
-          'filePath': filePath,
-          'fileName': fileName,
-          'relativePath':
-              androidRelativePath ?? _getDefaultRelativePathForType(mimeType),
-          'skipIfExists': skipIfExists,
-        },
-      );
+      final result = await _channel.invokeMapMethod<String, dynamic>('saveFileToGallery', <String, dynamic>{
+        'filePath': filePath,
+        'fileName': fileName,
+        'relativePath': _resolveRelativePath(
+          albumPath: normalizedAlbumPath.value,
+          mimeType: mimeType,
+        ),
+        'albumPath': normalizedAlbumPath.value,
+        'skipIfExists': skipIfExists,
+      });
 
       return SaveResult.fromMap(result!);
     } catch (e) {
@@ -131,10 +141,8 @@ class SaverGallery {
 
     try {
       for (var imageData in images) {
-        String? mimeType =
-            lookupMimeType(imageData.fileName, headerBytes: imageData.bytes);
-        String extension = imageData.extension ??
-            _extractFileExtension(mimeType, imageData.fileName);
+        String? mimeType = lookupMimeType(imageData.fileName, headerBytes: imageData.bytes);
+        String extension = imageData.extension ?? _extractFileExtension(mimeType, imageData.fileName);
 
         String fileName = imageData.fileName;
         if (!fileName.contains('.')) {
@@ -145,19 +153,17 @@ class SaverGallery {
         final tempFile = await _createTempFile(extension, imageData.bytes);
         tempFiles.add(tempFile);
 
-        // Use per-image androidRelativePath from ImageData
-        fileDataList.add(SaveFileData(
-          filePath: tempFile.path,
-          fileName: fileName,
-          androidRelativePath: imageData.androidRelativePath,
-        ));
+        fileDataList.add(
+          SaveFileData(
+            filePath: tempFile.path,
+            fileName: fileName,
+            albumPath: imageData.albumPath,
+          ),
+        );
       }
 
       // Save all files in batch (saveFiles will handle individual paths)
-      final result = await saveFiles(
-        fileDataList,
-        skipIfExists: skipIfExists,
-      );
+      final result = await saveFiles(fileDataList, skipIfExists: skipIfExists);
 
       return result;
     } finally {
@@ -180,37 +186,40 @@ class SaverGallery {
   /// [skipIfExists] if true, skips saving if a file already exists.
   ///
   /// Returns a [SaveResult] indicating success or failure for the batch operation.
-  static Future<SaveResult> saveFiles(
-    List<SaveFileData> files, {
-    required bool skipIfExists,
-  }) async {
+  static Future<SaveResult> saveFiles(List<SaveFileData> files, {required bool skipIfExists}) async {
     if (files.isEmpty) {
       return SaveResult(false, 'File list is empty');
     }
 
-    // Convert FileData list to maps for native method call
-    final List<Map<String, dynamic>> _files = files.map((fileData) {
-      String? mimeType = lookupMimeType(fileData.filePath);
-
-      // Use FileData.androidRelativePath, or default based on MIME type
-      String relativePath = fileData.androidRelativePath ??
-          _getDefaultRelativePathForType(mimeType);
-
-      return {
-        'filePath': fileData.filePath,
-        'fileName': fileData.fileName,
-        'relativePath': relativePath,
-      };
-    }).toList();
-
     try {
-      final result = await _channel.invokeMapMethod<String, dynamic>(
-        'saveFilesToGallery',
-        <String, dynamic>{
-          'files': _files,
-          'skipIfExists': skipIfExists,
-        },
-      );
+      // Convert FileData list to maps for native method call
+      final List<Map<String, dynamic>> _files = files.map((fileData) {
+        String? mimeType = lookupMimeType(fileData.filePath);
+        final normalizedAlbumPath = _normalizeAlbumPath(fileData.albumPath);
+        if (normalizedAlbumPath.errorMessage != null) {
+          throw ArgumentError(normalizedAlbumPath.errorMessage);
+        }
+
+        String relativePath = _resolveRelativePath(
+          albumPath: normalizedAlbumPath.value,
+          mimeType: mimeType,
+        );
+
+        final file = <String, dynamic>{
+          'filePath': fileData.filePath,
+          'fileName': fileData.fileName,
+          'relativePath': relativePath,
+        };
+        if (normalizedAlbumPath.value != null) {
+          file['albumPath'] = normalizedAlbumPath.value;
+        }
+        return file;
+      }).toList();
+
+      final result = await _channel.invokeMapMethod<String, dynamic>('saveFilesToGallery', <String, dynamic>{
+        'files': _files,
+        'skipIfExists': skipIfExists,
+      });
 
       return SaveResult.fromMap(result!);
     } catch (e) {
@@ -223,8 +232,7 @@ class SaverGallery {
   /// [mimeType] is the MIME type of the file.
   /// Returns the default relative path as a string based on the type of file.
   static String _getDefaultRelativePathForType(String? mimeType) {
-    if (mimeType == null)
-      return "Download"; // Default path if MIME type is unknown.
+    if (mimeType == null) return "Download"; // Default path if MIME type is unknown.
 
     if (mimeType.startsWith("image/")) {
       return "Pictures"; // Corresponds to Environment.DIRECTORY_PICTURES
@@ -235,6 +243,59 @@ class SaverGallery {
     } else {
       return "Documents"; // Corresponds to Environment.DIRECTORY_DOCUMENTS for other types.
     }
+  }
+
+  static String _resolveRelativePath({
+    required String? albumPath,
+    required String? mimeType,
+  }) {
+    final defaultPath = _getDefaultRelativePathForType(mimeType);
+    if (albumPath == null) {
+      return defaultPath;
+    }
+
+    if (_hasKnownPublicDirectoryPrefix(albumPath)) {
+      return albumPath;
+    }
+    return '$defaultPath/$albumPath';
+  }
+
+  static bool _hasKnownPublicDirectoryPrefix(String albumPath) {
+    const publicDirectoryPrefixes = <String>{
+      'Pictures',
+      'Movies',
+      'Music',
+      'Documents',
+      'Download',
+      'Downloads',
+      'DCIM',
+    };
+
+    final firstSegment = albumPath.split('/').first;
+    return publicDirectoryPrefixes.contains(firstSegment);
+  }
+
+  static _AlbumPathValidation _normalizeAlbumPath(String? albumPath) {
+    final path = albumPath?.trim().replaceAll('\\', '/');
+    if (path == null || path.isEmpty) {
+      return _AlbumPathValidation(null, null);
+    }
+
+    final isAbsolutePath = path.startsWith('/');
+    final normalizedPath = path.replaceAll(RegExp(r'^/+|/+$'), '');
+    final isWindowsAbsolutePath = RegExp(r'^[a-zA-Z]:').hasMatch(normalizedPath);
+    final segments = normalizedPath.split('/');
+    final isUnsafe =
+        normalizedPath.isEmpty ||
+        isAbsolutePath ||
+        isWindowsAbsolutePath ||
+        segments.any((segment) => segment.isEmpty || segment == '.' || segment == '..');
+
+    if (isUnsafe) {
+      return _AlbumPathValidation(null, 'albumPath must be a relative album hierarchy path');
+    }
+
+    return _AlbumPathValidation(normalizedPath, null);
   }
 
   /// Extracts the file extension from the MIME type or falls back to the file name.
@@ -253,8 +314,7 @@ class SaverGallery {
   /// [extension] is the file extension to use.
   /// [bytes] is the data to be written to the temporary file.
   static Future<File> _createTempFile(String extension, Uint8List bytes) async {
-    final tempPath =
-        '${(await _cacheDirectory).path}/${_uuidGenerator.v4()}.$extension';
+    final tempPath = '${(await _cacheDirectory).path}/${_uuidGenerator.v4()}.$extension';
     final tempFile = File(tempPath)..createSync(recursive: true);
     await tempFile.writeAsBytes(bytes);
     return tempFile;
@@ -279,4 +339,11 @@ class SaverGallery {
       return false;
     }
   }
+}
+
+class _AlbumPathValidation {
+  final String? value;
+  final String? errorMessage;
+
+  const _AlbumPathValidation(this.value, this.errorMessage);
 }

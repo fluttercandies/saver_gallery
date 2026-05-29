@@ -6,12 +6,12 @@ class SaveImageData {
   final Uint8List bytes;
   final String fileName;
   final String? extension;
-  final String? androidRelativePath;
+  final String? albumPath;
 
   SaveImageData({
     required this.bytes,
     required this.fileName,
-    this.androidRelativePath,
+    this.albumPath,
     this.extension,
   });
 }
@@ -20,23 +20,16 @@ class SaveImageData {
 class SaveFileData {
   final String filePath;
   final String fileName;
-  final String? androidRelativePath;
+  final String? albumPath;
 
-  SaveFileData({
-    required this.filePath,
-    required this.fileName,
-    this.androidRelativePath,
-  });
+  SaveFileData({required this.filePath, required this.fileName, this.albumPath});
 
   /// Creates a [SaveFileData] instance from a [File] object.
-  factory SaveFileData.fromFile(
-    File file, {
-    String? androidRelativePath,
-  }) {
+  factory SaveFileData.fromFile(File file, {String? albumPath}) {
     return SaveFileData(
       filePath: file.path,
       fileName: file.uri.pathSegments.last,
-      androidRelativePath: androidRelativePath,
+      albumPath: albumPath,
     );
   }
 }
@@ -45,16 +38,21 @@ class SaveFileData {
 class SaveResult {
   final bool isSuccess;
   final String? errorMessage;
+  final String? savedUri;
+  final List<String> savedUris;
 
-  SaveResult(this.isSuccess, this.errorMessage);
+  SaveResult(this.isSuccess, this.errorMessage, {this.savedUri, List<String>? savedUris})
+    : savedUris = savedUris ?? (savedUri == null ? const <String>[] : <String>[savedUri]);
 
   /// Creates a [SaveResult] from a map.
   factory SaveResult.fromMap(Map<String, dynamic> json) {
-    return SaveResult(json['isSuccess'], json['errorMessage']);
+    final savedUri = json['savedUri'] as String?;
+    final savedUris = (json['savedUris'] as List?)?.whereType<String>().toList();
+    return SaveResult(json['isSuccess'], json['errorMessage'], savedUri: savedUri, savedUris: savedUris);
   }
 
   @override
   String toString() {
-    return 'SaveResult{isSuccess: $isSuccess, errorMessage: $errorMessage}';
+    return 'SaveResult{isSuccess: $isSuccess, errorMessage: $errorMessage, savedUri: $savedUri, savedUris: $savedUris}';
   }
 }

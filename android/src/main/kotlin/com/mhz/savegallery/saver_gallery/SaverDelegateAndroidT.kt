@@ -1,6 +1,7 @@
 package com.mhz.savegallery.saver_gallery
 
 import android.annotation.SuppressLint
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
@@ -35,8 +36,10 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
     ) {
         mainScope.launch {
             // Check if the file already exists in the gallery, if `skipIfExists` is true.
-            if (skipIfExists && fileExistsInGallery(relativePath, fileName)) {
-                result.success(SaveResultModel(true).toHashMap())
+            val mimeType = getMIMEType(extension) ?: "image/$extension"
+            val existingUri = if (skipIfExists) findExistingUri(relativePath, fileName, mimeType) else null
+            if (skipIfExists && existingUri != null) {
+                result.success(SaveResultModel(true, savedUri = existingUri.toString()).toHashMap())
                 return@launch
             }
 
@@ -49,7 +52,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
 
             // Scan and make the saved image visible in the gallery.
             scanUri(context, uri, "image/$extension")
-            result.success(SaveResultModel(isSuccess, if (!isSuccess) "Couldn't save the image" else null).toHashMap())
+            result.success(SaveResultModel(isSuccess, if (!isSuccess) "Couldn't save the image" else null, savedUri = if (isSuccess) uri.toString() else null).toHashMap())
         }
     }
 
@@ -62,17 +65,18 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
     ) {
         mainScope.launch {
             // Check if the file already exists in the gallery, if `skipIfExists` is true.
-            if (skipIfExists && fileExistsInGallery(relativePath, fileName)) {
-                result.success(SaveResultModel(true).toHashMap())
-                return@launch
-            }
-
             val file = File(filePath)
             val extension = file.extension
             val mimeType = getMIMEType(extension)
 
             if (mimeType.isNullOrEmpty()) {
                 result.success(SaveResultModel(false, "Unsupported file type").toHashMap())
+                return@launch
+            }
+
+            val existingUri = if (skipIfExists) findExistingUri(relativePath, fileName, mimeType) else null
+            if (skipIfExists && existingUri != null) {
+                result.success(SaveResultModel(true, savedUri = existingUri.toString()).toHashMap())
                 return@launch
             }
 
@@ -85,7 +89,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
 
             // Scan and make the saved file visible in the gallery.
             scanUri(context, uri, mimeType)
-            result.success(SaveResultModel(isSuccess, if (!isSuccess) "Couldn't save the file" else null).toHashMap())
+            result.success(SaveResultModel(isSuccess, if (!isSuccess) "Couldn't save the file" else null, savedUri = if (isSuccess) uri.toString() else null).toHashMap())
         }
     }
 
@@ -98,6 +102,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
             var successCount = 0
             var failureCount = 0
             val errors = mutableListOf<String>()
+            val savedUris = mutableListOf<String>()
 
             for (fileData in files) {
                 val filePath = fileData["filePath"] ?: continue
@@ -105,12 +110,6 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
                 val relativePath = fileData["relativePath"] ?: "Download"
 
                 try {
-                    // Check if the file already exists in the gallery, if `skipIfExists` is true.
-                    if (skipIfExists && fileExistsInGallery(relativePath, fileName)) {
-                        successCount++
-                        continue
-                    }
-
                     val file = File(filePath)
                     val extension = file.extension
                     val mimeType = getMIMEType(extension)
@@ -118,6 +117,14 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
                     if (mimeType.isNullOrEmpty()) {
                         failureCount++
                         errors.add("$fileName: Unsupported file type")
+                        continue
+                    }
+
+                    // Check if the file already exists in the gallery, if `skipIfExists` is true.
+                    val existingUri = if (skipIfExists) findExistingUri(relativePath, fileName, mimeType) else null
+                    if (skipIfExists && existingUri != null) {
+                        savedUris.add(existingUri.toString())
+                        successCount++
                         continue
                     }
 
@@ -133,6 +140,7 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
                     if (isSuccess) {
                         // Scan and make the saved file visible in the gallery.
                         scanUri(context, uri, mimeType)
+                        savedUris.add(uri.toString())
                         successCount++
                     } else {
                         failureCount++
@@ -145,10 +153,10 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
             }
 
             val finalResult = if (failureCount == 0) {
-                SaveResultModel(true, null).toHashMap()
+                SaveResultModel(true, null, savedUris = savedUris).toHashMap()
             } else {
                 val errorMessage = "Saved $successCount files, failed $failureCount files. Errors: ${errors.joinToString("; ")}"
-                SaveResultModel(successCount > 0, errorMessage).toHashMap()
+                SaveResultModel(successCount > 0, errorMessage, savedUris = savedUris).toHashMap()
             }
 
             result.success(finalResult)
@@ -242,26 +250,36 @@ class SaverDelegateAndroidT(context: Context) : SaverDelegate(context) {
         }
     }
 
-    // Checks if a file with the given name already exists in the specified relative path.
+    // Finds a file with the given name in the specified relative path.
     @SuppressLint("InlinedApi")
-    private fun fileExistsInGallery(relativePath: String, fileName: String): Boolean {
-        val projection = arrayOf(MediaStore.Images.Media._ID)
+    private fun findExistingUri(relativePath: String, fileName: String, mimeType: String?): Uri? {
+        val contentUri = when {
+            mimeType?.startsWith("video") == true -> MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            mimeType?.startsWith("audio") == true -> MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            else -> MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        }
+        val projection = arrayOf(MediaStore.MediaColumns._ID)
         val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Images.Media.DISPLAY_NAME} = ?"
         val selectionArgs = arrayOf("%$relativePath%", fileName)
         val sortOrder = "${MediaStore.Images.Media.DISPLAY_NAME} ASC"
 
         return try {
             context.contentResolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                contentUri,
                 projection,
                 selection,
                 selectionArgs,
                 sortOrder
             )?.use { cursor ->
-                cursor.count > 0
-            } ?: false
+                if (cursor.moveToFirst()) {
+                    val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
+                    ContentUris.withAppendedId(contentUri, id)
+                } else {
+                    null
+                }
+            }
         } catch (e: Exception) {
-            false
+            null
         }
     }
 

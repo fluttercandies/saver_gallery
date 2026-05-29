@@ -1,6 +1,7 @@
 package com.mhz.savegallery.saver_gallery
 
 import android.annotation.SuppressLint
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -94,6 +95,7 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
             var successCount = 0
             var failureCount = 0
             val errors = mutableListOf<String>()
+            val savedUris = mutableListOf<String>()
 
             for (fileData in files) {
                 val filePath = fileData["filePath"] ?: continue
@@ -104,6 +106,7 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
                 val isSuccess = saveResult["isSuccess"] as? Boolean ?: false
 
                 if (isSuccess) {
+                    (saveResult["savedUri"] as? String)?.let { savedUris.add(it) }
                     successCount++
                 } else {
                     failureCount++
@@ -115,10 +118,10 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
             }
 
             val finalResult = if (failureCount == 0) {
-                SaveResultModel(true, null).toHashMap()
+                SaveResultModel(true, null, savedUris = savedUris).toHashMap()
             } else {
                 val errorMessage = "Saved $successCount files, failed $failureCount files. Errors: ${errors.joinToString("; ")}"
-                SaveResultModel(successCount > 0, errorMessage).toHashMap()
+                SaveResultModel(successCount > 0, errorMessage, savedUris = savedUris).toHashMap()
             }
 
             result.success(finalResult)
@@ -144,8 +147,9 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
         skipIfExists: Boolean,
         relativePath: String
     ): HashMap<String, Any?> {
-        return if (skipIfExists && doesFileExist(relativePath, fileName)) {
-            SaveResultModel(true, null).toHashMap()
+        val existingUri = if (skipIfExists) findExistingUri(relativePath, fileName) else null
+        return if (skipIfExists && existingUri != null) {
+            SaveResultModel(true, null, savedUri = existingUri.toString()).toHashMap()
         } else {
             try {
                 val fileUri = generateFileUri(fileName, relativePath)
@@ -154,7 +158,8 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
                     outputStream.flush()
                 }
                 notifyGallery(fileUri)
-                SaveResultModel(fileUri.toString().isNotEmpty(), null).toHashMap()
+                val isSuccess = fileUri.toString().isNotEmpty()
+                SaveResultModel(isSuccess, null, savedUri = if (isSuccess) fileUri.toString() else null).toHashMap()
             } catch (e: Exception) {
                 e.printStackTrace()
                 SaveResultModel(false, "Failed to save image: ${e.message}").toHashMap()
@@ -177,8 +182,9 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
         relativePath: String,
         skipIfExists: Boolean
     ): HashMap<String, Any?> {
-        return if (skipIfExists && doesFileExist(relativePath, fileName)) {
-            SaveResultModel(true, null).toHashMap()
+        val existingUri = if (skipIfExists) findExistingUri(relativePath, fileName) else null
+        return if (skipIfExists && existingUri != null) {
+            SaveResultModel(true, null, savedUri = existingUri.toString()).toHashMap()
         } else {
             try {
                 val fileUri = generateFileUri(fileName, relativePath)
@@ -193,7 +199,8 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
                     }
                 }
                 notifyGallery(fileUri)
-                SaveResultModel(fileUri.toString().isNotEmpty(), null).toHashMap()
+                val isSuccess = fileUri.toString().isNotEmpty()
+                SaveResultModel(isSuccess, null, savedUri = if (isSuccess) fileUri.toString() else null).toHashMap()
             } catch (e: Exception) {
                 e.printStackTrace()
                 SaveResultModel(false, "Failed to save file: ${e.message}").toHashMap()
@@ -243,18 +250,16 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
         }
     }
 
-    /**
-     * Checks if a file with the given name already exists in the specified relative path.
-     *
-     * @param relativePath The relative path in the gallery.
-     * @param fileName The name of the file to check.
-     * @return True if the file exists, false otherwise.
-     */
     @SuppressLint("InlinedApi")
-    private fun doesFileExist(relativePath: String, fileName: String): Boolean {
+    private fun findExistingUri(relativePath: String, fileName: String): Uri? {
+        val mimeType = getMIMEType(fileName.substringAfterLast('.', ""))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            val projection = arrayOf(MediaStore.Images.Media._ID)
+            val contentUri = when {
+                mimeType?.startsWith("video") == true -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                mimeType?.startsWith("audio") == true -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            }
+            val projection = arrayOf(MediaStore.MediaColumns._ID)
             val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Images.Media.DISPLAY_NAME} = ?"
             val selectionArgs = arrayOf("%$relativePath%", fileName)
             val sortOrder = "${MediaStore.Images.Media.DISPLAY_NAME} ASC"
@@ -267,20 +272,25 @@ class SaverDelegateDefault(context: Context) : SaverDelegate(context) {
                     selectionArgs,
                     sortOrder
                 )?.use { cursor ->
-                    cursor.count > 0
-                } ?: false
+                    if (cursor.moveToFirst()) {
+                        val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
+                        ContentUris.withAppendedId(contentUri, id)
+                    } else {
+                        null
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                false
+                null
             }
         } else {
             return try {
-                val mimeType = getMIMEType(fileName.substringAfterLast('.', ""))
                 val targetDirectory = resolveLegacyTargetDirectory(relativePath, mimeType)
-                File(targetDirectory, fileName).exists()
+                val existingFile = File(targetDirectory, fileName)
+                if (existingFile.exists()) Uri.fromFile(existingFile) else null
             } catch (e: Exception) {
                 e.printStackTrace()
-                false
+                null
             }
         }
     }
