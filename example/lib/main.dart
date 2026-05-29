@@ -56,6 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
             _buildButton("Save Network Image", _getHttp),
             _buildButton("Save Network Video", _saveVideo),
             _buildButton("Save Gif to Gallery", _saveGif),
+            _buildButton("Save Two Gifs", _saveTwoGifs),
           ],
         ),
       ),
@@ -142,6 +143,33 @@ class _MyHomePageState extends State<MyHomePage> {
         skipIfExists: false,
       );
       _showMessage(result.toString());
+    } catch (e) {
+      _showMessage('Error: $e');
+    }
+  }
+
+  Future<void> _saveTwoGifs() async {
+    try {
+      final response = await Dio().get(
+        "https://test-1300597023.cos.ap-singapore.myqcloud.com/hyj-doc-flutter-demo-run%20%281%29.gif",
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = Uint8List.fromList(response.data);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final results = await Future.wait([
+        SaverGallery.saveImage(
+          bytes,
+          fileName: "parallel_${timestamp}_1.gif",
+          skipIfExists: false,
+        ),
+        SaverGallery.saveImage(
+          bytes,
+          fileName: "parallel_${timestamp}_2.gif",
+          skipIfExists: false,
+        ),
+      ]);
+
+      _showMessage(results.toString());
     } catch (e) {
       _showMessage('Error: $e');
     }

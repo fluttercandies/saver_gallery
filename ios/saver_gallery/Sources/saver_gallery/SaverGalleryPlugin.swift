@@ -4,8 +4,6 @@ import Photos
 
 public class SaverGalleryPlugin: NSObject, FlutterPlugin {
   let errorMessage = "Failed to save, please check whether the permission is enabled"
-       
-  var result: FlutterResult?;
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "com.fluttercandies/saver_gallery", binaryMessenger: registrar.messenger())
@@ -14,19 +12,23 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
   }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-      self.result = result
       if call.method == "saveImageToGallery" {
         let arguments = call.arguments as? [String: Any] ?? [String: Any]()
-        saveImageToGallery(arguments)
+        saveImageToGallery(arguments, result: result)
       } else if (call.method == "saveFileToGallery") {
         guard let arguments = call.arguments as? [String: Any],
               let path = arguments["filePath"] as? String
-              else { return }
+              else {
+            saveResult(isSuccess: false, error: "Invalid arguments", result: result)
+            return
+        }
         if (isImageFile(fileName: path)) {
-            saveImageAtFileUrl(path)
+            saveImageAtFileUrl(path, result: result)
         } else {
             if (UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(path)) {
-                saveVideo(path)
+                saveVideo(path, result: result)
+            } else {
+                saveResult(isSuccess: false, error: "Unsupported file type", result: result)
             }
         }
       } else if (call.method == "saveFilesToGallery") {
@@ -36,17 +38,20 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
             result(["isSuccess": false, "errorMessage": "Invalid arguments"])
             return 
         }
-        saveFiles(files)
+        saveFiles(files, result: result)
       } else {
         result(FlutterMethodNotImplemented)
       }
     }
 
-    func saveImageToGallery(_ arguments: [String: Any]) {
+    func saveImageToGallery(_ arguments: [String: Any], result: @escaping FlutterResult) {
         guard let imageData = (arguments["image"] as? FlutterStandardTypedData)?.data,
               let quality = arguments["quality"] as? Int,
               let fileName = arguments["fileName"] as? String
-              else { return }
+              else {
+            saveResult(isSuccess: false, error: "Invalid arguments", result: result)
+            return
+        }
 
         let extFromArgs = (arguments["extension"] as? String)?.lowercased()
         let extFromFileName = URL(fileURLWithPath: fileName).pathExtension.lowercased()
@@ -73,20 +78,31 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && imageIds.count > 0) {
-                    self.saveResult(isSuccess: true)
+                    self.saveResult(isSuccess: true, result: result)
                 } else {
-                    self.saveResult(isSuccess: false, error: self.errorMessage)
+                    self.saveResult(isSuccess: false, error: self.errorMessage, result: result)
                 }
             }
         })
     }
 
-    func saveFiles(_ files: [[String: String]]) {
+    func saveFiles(_ files: [[String: String]], result: @escaping FlutterResult) {
         var successCount = 0
         var failureCount = 0
         var errors: [String] = []
         let totalFiles = files.count
         var processedCount = 0
+
+        if totalFiles == 0 {
+            saveResult(isSuccess: false, error: "File list is empty", result: result)
+            return
+        }
+
+        func finishIfNeeded() {
+            if processedCount == totalFiles {
+                self.saveBatchResult(successCount: successCount, failureCount: failureCount, errors: errors, result: result)
+            }
+        }
         
         for fileData in files {
             guard let filePath = fileData["filePath"],
@@ -94,6 +110,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
                 processedCount += 1
                 failureCount += 1
                 errors.append("Invalid file data")
+                finishIfNeeded()
                 continue
             }
             
@@ -111,9 +128,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
                             errors.append("\(fileName): \(error?.localizedDescription ?? "Unknown error")")
                         }
                         
-                        if processedCount == totalFiles {
-                            self.saveBatchResult(successCount: successCount, failureCount: failureCount, errors: errors)
-                        }
+                        finishIfNeeded()
                     }
                 })
             } else if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(filePath) {
@@ -130,24 +145,19 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
                             errors.append("\(fileName): \(error?.localizedDescription ?? "Unknown error")")
                         }
                         
-                        if processedCount == totalFiles {
-                            self.saveBatchResult(successCount: successCount, failureCount: failureCount, errors: errors)
-                        }
+                        finishIfNeeded()
                     }
                 })
             } else {
                 processedCount += 1
                 failureCount += 1
                 errors.append("\(fileName): Unsupported file type")
-                
-                if processedCount == totalFiles {
-                    self.saveBatchResult(successCount: successCount, failureCount: failureCount, errors: errors)
-                }
+                finishIfNeeded()
             }
         }
     }
 
-    func saveVideo(_ path: String) {
+    func saveVideo(_ path: String, result: @escaping FlutterResult) {
         var videoIds: [String] = []
 
         PHPhotoLibrary.shared().performChanges( {
@@ -158,15 +168,15 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && videoIds.count > 0) {
-                    self.saveResult(isSuccess: true)
+                    self.saveResult(isSuccess: true, result: result)
                 } else {
-                    self.saveResult(isSuccess: false, error: self.errorMessage)
+                    self.saveResult(isSuccess: false, error: self.errorMessage, result: result)
                 }
             }
         })
     }
 
-    func saveImageAtFileUrl(_ url: String) {
+    func saveImageAtFileUrl(_ url: String, result: @escaping FlutterResult) {
   
         var imageIds: [String] = []
 
@@ -178,31 +188,22 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && imageIds.count > 0) {
-                    self.saveResult(isSuccess: true)
+                    self.saveResult(isSuccess: true, result: result)
                 } else {
-                    self.saveResult(isSuccess: false, error: self.errorMessage)
+                    self.saveResult(isSuccess: false, error: self.errorMessage, result: result)
                 }
             }
         })
     }
 
-    /// finish saving，if has error，parameters error will not nill
-    @objc func didFinishSavingImage(image: UIImage, error: NSError?, contextInfo: UnsafeMutableRawPointer?) {
-        saveResult(isSuccess: error == nil, error: error?.description)
-    }
-
-    @objc func didFinishSavingVideo(videoPath: String, error: NSError?, contextInfo: UnsafeMutableRawPointer?) {
-        saveResult(isSuccess: error == nil, error: error?.description)
-    }
-
-    func saveResult(isSuccess: Bool, error: String? = nil) {
+    func saveResult(isSuccess: Bool, error: String? = nil, result: FlutterResult) {
         var saveResult = SaveResultModel()
-        saveResult.isSuccess = error == nil
+        saveResult.isSuccess = isSuccess
         saveResult.errorMessage = error?.description
-        result?(saveResult.toDic())
+        result(saveResult.toDic())
     }
 
-    func saveBatchResult(successCount: Int, failureCount: Int, errors: [String]) {
+    func saveBatchResult(successCount: Int, failureCount: Int, errors: [String], result: FlutterResult) {
         var saveResult = SaveResultModel()
         if failureCount == 0 {
             saveResult.isSuccess = true
@@ -212,7 +213,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
             let errorMessage = "Saved \(successCount) files, failed \(failureCount) files. Errors: \(errors.joined(separator: "; "))"
             saveResult.errorMessage = errorMessage
         }
-        result?(saveResult.toDic())
+        result(saveResult.toDic())
     }
 
     func isImageFile(fileName: String) -> Bool {
