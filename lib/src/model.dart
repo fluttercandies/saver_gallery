@@ -38,16 +38,21 @@ class SaveFileData {
 class SaveResult {
   final bool isSuccess;
   final String? errorMessage;
+  final String? savedUri;
+  final List<String> savedUris;
 
-  SaveResult(this.isSuccess, this.errorMessage);
+  SaveResult(this.isSuccess, this.errorMessage, {this.savedUri, List<String>? savedUris})
+    : savedUris = savedUris ?? (savedUri == null ? const <String>[] : <String>[savedUri]);
 
   /// Creates a [SaveResult] from a map.
   factory SaveResult.fromMap(Map<String, dynamic> json) {
-    return SaveResult(json['isSuccess'], json['errorMessage']);
+    final savedUri = json['savedUri'] as String?;
+    final savedUris = (json['savedUris'] as List?)?.whereType<String>().toList();
+    return SaveResult(json['isSuccess'], json['errorMessage'], savedUri: savedUri, savedUris: savedUris);
   }
 
   @override
   String toString() {
-    return 'SaveResult{isSuccess: $isSuccess, errorMessage: $errorMessage}';
+    return 'SaveResult{isSuccess: $isSuccess, errorMessage: $errorMessage, savedUri: $savedUri, savedUris: $savedUris}';
   }
 }

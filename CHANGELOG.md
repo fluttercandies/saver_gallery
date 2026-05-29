@@ -1,7 +1,8 @@
 ## Unreleased
 
-* **Breaking change**: Replace `androidRelativePath` with `albumPath`, enabling cross-platform album hierarchy support on Android and iOS (Refs #23).
+* **Breaking change**: Replace `androidRelativePath` with `albumPath`, enabling cross-platform album hierarchy support on Android and iOS (#23).
 * Add iOS PhotoKit folder hierarchy support for nested `albumPath` values.
+* Return saved URI(s) after saving (#23).
 
 ## 5.0.3
 

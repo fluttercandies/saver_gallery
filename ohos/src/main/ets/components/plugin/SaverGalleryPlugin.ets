@@ -86,7 +86,7 @@ export default class SaverGalleryPlugin implements FlutterPlugin, MethodCallHand
       await fs.copyFile(srcFile.fd, desFile.fd);
       fs.closeSync(srcFile);
       fs.closeSync(desFile);
-      return SaveResultModel.toHashMap(true, null);
+      return SaveResultModel.toHashMap(true, null, desFileUris[0], [desFileUris[0]]);
     } catch (err) {
       return SaveResultModel.toHashMap(false, `save failed, errCode is ${err.code}, errMsg is ${err.message}`);
     }
@@ -188,7 +188,7 @@ export default class SaverGalleryPlugin implements FlutterPlugin, MethodCallHand
         fs.closeSync(desFile);
       }
 
-      return SaveResultModel.toHashMap(true, null);
+      return SaveResultModel.toHashMap(true, null, null, desFileUris);
     } catch (err) {
       return SaveResultModel.toHashMap(false, `batch save failed, errCode is ${err.code}, errMsg is ${err.message}`);
     }
@@ -234,10 +234,17 @@ export default class SaverGalleryPlugin implements FlutterPlugin, MethodCallHand
 }
 
 class SaveResultModel {
-  static toHashMap(isSuccess: boolean, errorMessage: string | null): HashMap<String, ESObject> {
+  static toHashMap(
+    isSuccess: boolean,
+    errorMessage: string | null,
+    savedUri: string | null = null,
+    savedUris: Array<string> = []
+  ): HashMap<String, ESObject> {
     let hashMap: HashMap<String, ESObject> = new HashMap();
     hashMap.set("isSuccess", isSuccess);
     hashMap.set("errorMessage", errorMessage);
+    hashMap.set("savedUri", savedUri);
+    hashMap.set("savedUris", savedUris.length > 0 ? savedUris : (savedUri ? [savedUri] : []));
     if (errorMessage) {
       isSuccess ? Log.d(TAG, errorMessage) : Log.e(TAG, errorMessage);
     }

@@ -236,6 +236,33 @@ Android public-directory prefixes are also accepted for migration compatibility,
 
 ---
 
+### Saved URI Result
+
+`SaveResult` includes the saved media location returned by the platform:
+
+```dart
+final result = await SaverGallery.saveImage(
+  imageBytes,
+  fileName: 'album_image.jpg',
+  albumPath: 'appName/images',
+  skipIfExists: false,
+);
+
+print(result.savedUri);
+print(result.savedUris);
+```
+
+- `savedUri`: The saved URI for single-file saves.
+- `savedUris`: Saved URIs for batch saves. Single-file saves also mirror `savedUri` into this list.
+- Android 10+ returns `content://...`.
+- Android 9 and below returns `file://...`.
+- iOS returns `ph://...`, based on the Photos asset local identifier.
+- OHOS returns the media library URI from the asset creation dialog.
+
+`savedUri` is a platform location identifier, not a guaranteed filesystem path.
+
+---
+
 ### Saving a File (e.g., Video)
 
 To save other types of files (e.g., videos) to the gallery:

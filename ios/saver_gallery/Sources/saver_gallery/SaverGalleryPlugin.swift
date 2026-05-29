@@ -97,7 +97,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && imageIds.count > 0) {
-                    self.saveResult(isSuccess: true, result: result)
+                    self.saveResult(isSuccess: true, savedUri: self.photoUri(from: imageIds.first), result: result)
                 } else {
                     self.saveResult(isSuccess: false, error: self.errorMessage, result: result)
                 }
@@ -109,6 +109,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         var successCount = 0
         var failureCount = 0
         var errors: [String] = []
+        var savedUris: [String] = []
         let totalFiles = files.count
         var processedCount = 0
 
@@ -119,7 +120,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
 
         func finishIfNeeded() {
             if processedCount == totalFiles {
-                self.saveBatchResult(successCount: successCount, failureCount: failureCount, errors: errors, result: result)
+                self.saveBatchResult(successCount: successCount, failureCount: failureCount, errors: errors, savedUris: savedUris, result: result)
             }
         }
         
@@ -143,14 +144,20 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
             }
 
             if isImageFile(fileName: filePath) {
+                var savedUri: String?
                 // Save image
                 performPhotoChanges({
                     let req = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: URL(fileURLWithPath: filePath))
-                    self.addAsset(req?.placeholderForCreatedAsset, toAlbumPath: albumPathResult.value)
+                    let placeholder = req?.placeholderForCreatedAsset
+                    savedUri = self.photoUri(from: placeholder?.localIdentifier)
+                    self.addAsset(placeholder, toAlbumPath: albumPathResult.value)
                 }, completionHandler: { (success, error) in
                     DispatchQueue.main.async {
                         processedCount += 1
                         if success {
+                            if let savedUri = savedUri {
+                                savedUris.append(savedUri)
+                            }
                             successCount += 1
                         } else {
                             failureCount += 1
@@ -161,14 +168,20 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
                     }
                 })
             } else if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(filePath) {
+                var savedUri: String?
                 // Save video
                 performPhotoChanges({
                     let req = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: URL(fileURLWithPath: filePath))
-                    self.addAsset(req?.placeholderForCreatedAsset, toAlbumPath: albumPathResult.value)
+                    let placeholder = req?.placeholderForCreatedAsset
+                    savedUri = self.photoUri(from: placeholder?.localIdentifier)
+                    self.addAsset(placeholder, toAlbumPath: albumPathResult.value)
                 }, completionHandler: { (success, error) in
                     DispatchQueue.main.async {
                         processedCount += 1
                         if success {
+                            if let savedUri = savedUri {
+                                savedUris.append(savedUri)
+                            }
                             successCount += 1
                         } else {
                             failureCount += 1
@@ -200,7 +213,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && videoIds.count > 0) {
-                    self.saveResult(isSuccess: true, result: result)
+                    self.saveResult(isSuccess: true, savedUri: self.photoUri(from: videoIds.first), result: result)
                 } else {
                     self.saveResult(isSuccess: false, error: self.errorMessage, result: result)
                 }
@@ -222,7 +235,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         }, completionHandler: { [unowned self] (success, error) in
             DispatchQueue.main.async {
                 if (success && imageIds.count > 0) {
-                    self.saveResult(isSuccess: true, result: result)
+                    self.saveResult(isSuccess: true, savedUri: self.photoUri(from: imageIds.first), result: result)
                 } else {
                     self.saveResult(isSuccess: false, error: self.errorMessage, result: result)
                 }
@@ -372,14 +385,25 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
         return PHCollectionList.fetchTopLevelUserCollections(with: options)
     }
 
-    func saveResult(isSuccess: Bool, error: String? = nil, result: FlutterResult) {
+    func photoUri(from localIdentifier: String?) -> String? {
+        guard let localIdentifier = localIdentifier else {
+            return nil
+        }
+        return "ph://\(localIdentifier)"
+    }
+
+    func saveResult(isSuccess: Bool, error: String? = nil, savedUri: String? = nil, result: FlutterResult) {
         var saveResult = SaveResultModel()
         saveResult.isSuccess = isSuccess
         saveResult.errorMessage = error?.description
+        saveResult.savedUri = savedUri
+        if let savedUri = savedUri {
+            saveResult.savedUris = [savedUri]
+        }
         result(saveResult.toDic())
     }
 
-    func saveBatchResult(successCount: Int, failureCount: Int, errors: [String], result: FlutterResult) {
+    func saveBatchResult(successCount: Int, failureCount: Int, errors: [String], savedUris: [String], result: FlutterResult) {
         var saveResult = SaveResultModel()
         if failureCount == 0 {
             saveResult.isSuccess = true
@@ -389,6 +413,7 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
             let errorMessage = "Saved \(successCount) files, failed \(failureCount) files. Errors: \(errors.joined(separator: "; "))"
             saveResult.errorMessage = errorMessage
         }
+        saveResult.savedUris = savedUris
         result(saveResult.toDic())
     }
 
@@ -411,6 +436,8 @@ public class SaverGalleryPlugin: NSObject, FlutterPlugin {
 public struct SaveResultModel: Encodable {
     var isSuccess: Bool!
     var errorMessage: String?
+    var savedUri: String?
+    var savedUris: [String]?
 
     func toDic() -> [String:Any]? {
         let encoder = JSONEncoder()

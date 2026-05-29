@@ -21,6 +21,86 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
   });
 
+  test("SaveResult parses savedUri and mirrors it into savedUris", () {
+    final result = SaveResult.fromMap(<String, dynamic>{
+      "isSuccess": true,
+      "errorMessage": null,
+      "savedUri": "content://media/external/images/media/1",
+    });
+
+    expect(result.isSuccess, true);
+    expect(result.errorMessage, null);
+    expect(result.savedUri, "content://media/external/images/media/1");
+    expect(result.savedUris, <String>["content://media/external/images/media/1"]);
+  });
+
+  test("SaveResult parses savedUris", () {
+    final result = SaveResult.fromMap(<String, dynamic>{
+      "isSuccess": true,
+      "errorMessage": null,
+      "savedUris": <String>["content://one", "content://two"],
+    });
+
+    expect(result.isSuccess, true);
+    expect(result.errorMessage, null);
+    expect(result.savedUri, null);
+    expect(result.savedUris, <String>["content://one", "content://two"]);
+  });
+
+  test("SaveResult uses empty uri fields when save failed", () {
+    final result = SaveResult.fromMap(<String, dynamic>{
+      "isSuccess": false,
+      "errorMessage": "failed",
+    });
+
+    expect(result.isSuccess, false);
+    expect(result.errorMessage, "failed");
+    expect(result.savedUri, null);
+    expect(result.savedUris, isEmpty);
+  });
+
+  test("saveImage exposes native savedUri", () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      return <String, dynamic>{
+        "isSuccess": true,
+        "errorMessage": null,
+        "savedUri": "content://media/external/images/media/1",
+      };
+    });
+
+    final result = await SaverGallery.saveImage(
+      Uint8List.fromList(<int>[1, 2, 3]),
+      extension: "png",
+      fileName: "sample.png",
+      skipIfExists: false,
+    );
+
+    expect(result.isSuccess, true);
+    expect(result.savedUri, "content://media/external/images/media/1");
+    expect(result.savedUris, <String>["content://media/external/images/media/1"]);
+  });
+
+  test("saveFiles exposes native savedUris", () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      return <String, dynamic>{
+        "isSuccess": true,
+        "errorMessage": null,
+        "savedUris": <String>["content://one", "content://two"],
+      };
+    });
+
+    final result = await SaverGallery.saveFiles(<SaveFileData>[
+      SaveFileData(filePath: "/tmp/sample.png", fileName: "sample.png"),
+      SaveFileData(filePath: "/tmp/sample.mp4", fileName: "sample.mp4"),
+    ], skipIfExists: false);
+
+    expect(result.isSuccess, true);
+    expect(result.savedUri, null);
+    expect(result.savedUris, <String>["content://one", "content://two"]);
+  });
+
   test("saveImage maps albumPath to Pictures relativePath", () async {
     final result = await SaverGallery.saveImage(
       Uint8List.fromList(<int>[1, 2, 3]),
