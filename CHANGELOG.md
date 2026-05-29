@@ -1,4 +1,4 @@
-## Unreleased
+## 5.0.3
 
 * Fix iOS parallel save requests overwriting pending results (#30).
 
